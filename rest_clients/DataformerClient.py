@@ -4,11 +4,16 @@ import requests
 
 
 class DataformerClient(object):
-    """Simple DataFormer rest api client
+    """Simple DataFormer rest rest_clients client
 
-    Attributes:
-        dataform_url    The DataFormer API's base URL
-        storage         The destination folder for dwonloaded files
+    Parameters
+    ----------
+        api_url: str
+            The base url where the DataFormer api lives
+        api_port: str
+            The port number of the DataFormer api
+        storage: str
+            The destination folder for downloaded files
     """
 
     HTTPConnection.debugLevel=1

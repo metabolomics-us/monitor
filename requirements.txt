@@ -1,0 +1,4 @@
+requests>=2.18.4
+simplejson>=3.15.0
+yamlconf>=0.2.3
+watchdog>=0.8.3

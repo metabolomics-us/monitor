@@ -5,7 +5,13 @@ import simplejson as json
 from http.client import HTTPConnection
 
 class StasisClient(object):
-    """Simple Stasis rest api client"""
+    """Simple Stasis rest rest_clients client
+
+    Parameters
+    ----------
+        api_url: str
+            The base url where the Stasis api lives
+    """
 
     HTTPConnection.debugLevel=1
 

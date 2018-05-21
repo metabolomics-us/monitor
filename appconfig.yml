@@ -1,0 +1,23 @@
+monitor:
+  paths:
+    - "/home/diego/tmp"
+    - "/home/diego/.carrot_storage"
+
+  extensions:
+    - ".d"
+    - ".mzml"
+    - ".cdf"
+    - ".peg"
+    - ".txt"
+    - ".wiff"
+    - "raw"
+    - "smp"
+
+stasis:
+  url: "https://test-api.metabolomics.us"
+  port: "80"
+
+dataform:
+  url: "http://phobos.fiehnlab.ucdavis.edu"
+  port: "9090"
+  storage: "/home/diego/.carrot_storage"
