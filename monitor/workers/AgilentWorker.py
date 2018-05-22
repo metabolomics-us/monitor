@@ -1,0 +1,77 @@
+import os
+import time
+import zipfile
+
+
+class AgilentWorker(object):
+    """Worker class that zips an agilent folder
+
+    Parameters
+    ----------
+        st_cli: StasisClient
+            Rest client object to interact with the stasis api
+        zipping_q: multiprocessing.JoinableQueue
+            A queue to hold the folders to be compressed
+        conversion_q: multiprocessing.JoinableQueue
+            A queue to hold the files to be converted to mzml
+    """
+
+    def __init__(self, st_cli, zipping_q, conversion_q):
+        self.stasis_cli = st_cli
+        self.zipping_q = zipping_q
+        self.conversion_q = conversion_q
+
+    def run(self):
+        """Starts the processing of elements in the zipping queue"""
+
+        running = True
+        while running:
+            try:
+                print('agilent_worker looking for something to do...')
+                item = self.zipping_q.get()
+                zipsize = 0
+
+                while (os.stat(item).st_size > zipsize):
+                    time.sleep(1)
+                    zipsize = os.stat(item).st_size
+
+                # 4. zip file
+                self.__compress(item)
+
+                self.zipping_q.task_done()
+            except KeyboardInterrupt:
+                print("stopping agilent_worker")
+                self.zipping_q.join()
+                running = False
+
+    def __compress(self, folder):
+        """Compresses a folder, and adds it to the conversion queue
+
+        Parameters
+        ----------
+            folder : str
+                The folder to be compressed
+        """
+        print("compressing folder %s..." % folder)
+
+        zipped = zipfile.ZipFile(f"{folder}.zip", 'w', zipfile.ZIP_DEFLATED)
+
+        # The root directory within the ZIP folder.
+        rootdir = os.path.basename(folder)
+
+        for dirpath, dirnames, filenames in os.walk(folder):
+            for filename in filenames:
+                # Write the folder named filename to the archive,
+                # giving it the archive name 'arcname'.
+                filepath = os.path.join(dirpath, filename)
+                parentpath = os.path.relpath(filepath, folder)
+                arcname = os.path.join(rootdir, parentpath)
+                print('*', end="", flush=True)
+                zipped.write(filepath, arcname)
+
+        zipped.close()
+
+        print(f"\n... zipped %s" % zipped.filename)
+
+        # 4.5 Add to conversion queue
+        self.conversion_q.put(zipped.filename)

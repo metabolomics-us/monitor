@@ -1,11 +1,12 @@
 import os
+from http.client import HTTPConnection
+
 import requests
 import simplejson as json
 
-from http.client import HTTPConnection
 
 class StasisClient(object):
-    """Simple Stasis rest rest_clients client
+    """Simple Stasis rest rest client
 
     Parameters
     ----------

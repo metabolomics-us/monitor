@@ -8,6 +8,6 @@ setup(name='Monitor',
       author='Diego Pedrosa',
       author_email='dpedrosa@ucdavis.edu',
       url='https://bitbucket.org/fiehnlab/monitor',
-      packages=['monitor', 'rest_clients'],
-      data_files=[('config',['appconfig.yml'])],
-     )
+      packages=['monitor', 'rest'],
+      data_files=[('config', ['appconfig.yaml'])],
+      )

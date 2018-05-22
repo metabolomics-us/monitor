@@ -3,31 +3,27 @@ import time
 
 from watchdog.events import FileSystemEventHandler
 
+
 class NewFileScanner(FileSystemEventHandler):
     """A custom file scanner
 
     Parameters
     ----------
-        stasis_cli: StasisClient
+        st_cli: StasisClient
             Rest client object to interact with the stasis api
         zipping_q: JoinableQueue
             Queue of folders to be zipped.
         conversion_q: JoinableQueue
             Queue of raw data files to be converted to mzml
         extensions: array
-            An array of valid file extensions (['.d','.mzml'])
+            An array of valid file extensions (['.d','.raw'])
     """
 
-    stasis_cli = ""
-    zipping_q = ""
-    conversion_q = ""
-    extensions = []
-
-    def __init__(self, stasis_cli, zipping_q, conversionn_q, extensions):
-        self.stasis_cli = stasis_cli
+    def __init__(self, st_cli, zipping_q, conversion_q, extensions):
+        self.stasis_cli = st_cli
         self.zipping_q = zipping_q
-        self.conversion_q = conversionn_q
-        self.extension = extensions
+        self.conversion_q = conversion_q
+        self.extensions = extensions
 
     def on_created(self, event):
         """Called when a file or directory is created.

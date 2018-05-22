@@ -6,12 +6,17 @@ monitor:
   extensions:
     - ".d"
     - ".mzml"
-    - ".cdf"
-    - ".peg"
-    - ".txt"
+    - ".mzxml"
+    - ".raw"
     - ".wiff"
-    - "raw"
-    - "smp"
+
+# to be added - we don't have any converter for these files yet
+#    - ".cdf"
+#    - ".peg"
+#    - ".txt"
+#    - ".smp"
+
+  storage: "/home/diego/.carrot_storage"
 
 stasis:
   url: "https://test-api.metabolomics.us"
@@ -20,4 +25,3 @@ stasis:
 dataform:
   url: "http://phobos.fiehnlab.ucdavis.edu"
   port: "9090"
-  storage: "/home/diego/.carrot_storage"

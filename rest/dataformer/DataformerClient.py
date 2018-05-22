@@ -1,10 +1,7 @@
-from http.client import HTTPConnection
-
 import requests
 
-
 class DataformerClient(object):
-    """Simple DataFormer rest rest_clients client
+    """Simple DataFormer rest rest client
 
     Parameters
     ----------
@@ -15,12 +12,6 @@ class DataformerClient(object):
         storage: str
             The destination folder for downloaded files
     """
-
-    HTTPConnection.debugLevel=1
-
-    dataformer_url = ""
-    dataformer_port = ""
-    storage = ""
 
     def __init__(self, api_url, api_port, storage):
         self.dataformer_url = f"{api_url}:{api_port}"
