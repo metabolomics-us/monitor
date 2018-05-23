@@ -8,7 +8,7 @@ from monitor.workers.AgilentWorker import AgilentWorker
 from monitor.workers.ConversionWorker import ConversionWorker
 
 
-class Monitor():
+class Monitor(object):
     """A file monitoring class
 
     Parameters
@@ -22,9 +22,11 @@ class Monitor():
     """
 
     def __init__(self, config, stasis_cli, dataform_cli):
+        super().__init__()
         self.config = config
         self.stasis_cli = stasis_cli
         self.dataform_cli = dataform_cli
+        self.running = True
 
     def start(self):
         """Initializes the scanning for files"""
@@ -32,21 +34,20 @@ class Monitor():
         conversion_q = JoinableQueue()
 
         agilent_worker = AgilentWorker(self.stasis_cli, zipping_q, conversion_q)
+        agilent_worker.daemon = True
+
         conversion_worker = ConversionWorker(
             self.stasis_cli,
-            zipping_q,
+            self.dataform_cli,
             conversion_q,
             self.config['monitor']['storage']
         )
+        conversion_worker.daemon = True
 
-        threads = [
-            Process(name='Agilent worker', target=agilent_worker.run),
-            Process(name='Convert worker', target=conversion_worker.run)
-        ]
+        threads = [agilent_worker, conversion_worker]
 
         for t in threads:
             print(f"starting thread {t.name}...")
-            t.daemon = True
             t.start()
 
         event_handler = monitor.NewFileScanner(
@@ -62,9 +63,10 @@ class Monitor():
             observer.schedule(event_handler, p, recursive=True)
         observer.start()
 
+        print('monitor started')
+
         try:
             while True:
-                print('waiting for files')
                 time.sleep(1)
         except KeyboardInterrupt:
             observer.stop()
@@ -73,4 +75,3 @@ class Monitor():
 
         for t in threads:
             t.join()
-            t.terminate()

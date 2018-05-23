@@ -1,4 +1,7 @@
-class ConversionWorker(object):
+from multiprocessing import Process
+
+
+class ConversionWorker(Process):
     """Worker class that converts a raw data file to mzml
 
     Parameters
@@ -13,9 +16,10 @@ class ConversionWorker(object):
             A folder destination for the converted files
     """
 
-    def __init__(self, df_cli, st_cli, conversion_q, storage):
-        self.dataform_cli = df_cli
+    def __init__(self, st_cli, df_cli, conversion_q, storage, name='conversion_worker'):
+        super().__init__(name=name)
         self.stasis_cli = st_cli
+        self.dataform_cli = df_cli
         self.conversion_q = conversion_q
         self.storage = storage
 
@@ -35,7 +39,7 @@ class ConversionWorker(object):
                 # 7. store as mzML file
                 if (self.dataform_cli.convert(item, 'mzml')):
                     # 8. trigger status converted
-                    self.stasis_cli.set_tracking(item, "converted")
+                    self.stasis_cli.set_tracking(item.replace(".zip", ""), "converted")
                 else:
                     raise Exception({'message': "Error uploading/converting file %s" % item})
 

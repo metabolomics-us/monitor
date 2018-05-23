@@ -1,0 +1,365 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<AcqMethod>
+  <Version>1.0</Version>
+  <!--Method Properties-->
+  <MethodName>SulfaQuantTargetedMSMS.m</MethodName>
+  <MethodPath>D:\MassHunter\data\071015c_SulfaQuant\sulfasTargetedMSMScal0100-r002.d\AcqData\SulfaQuantTargetedMSMS.m</MethodPath>
+  <MethodDescription>Default Method</MethodDescription>
+  <!--List of Devices-->
+  <DeviceList>h-ALS-SL</DeviceList>
+  <DeviceList>BinPump-SL</DeviceList>
+  <DeviceList>Column-SL</DeviceList>
+  <DeviceList>MS Q-TOF</DeviceList>
+  <!--Device Specific Setpoints-->
+  <WPS>
+    <ComponentModelName>h-ALS-SL</ComponentModelName>
+    <ComponentModel>G1367C</ComponentModel>
+    <ComponentOrdinal>1</ComponentOrdinal>
+    <ComponentOptions />
+    <Version>1, 0, 0, 1; Base: 0.2.065.0</Version>
+    <Stoptime>As Pump</Stoptime>
+    <Posttime>Off</Posttime>
+    <Delay>0</Delay>
+    <CONTACT_1>0</CONTACT_1>
+    <CONTACT_2>0</CONTACT_2>
+    <CONTACT_3>0</CONTACT_3>
+    <CONTACT_4>0</CONTACT_4>
+    <ContactsTimetable />
+    <Signals>
+      <SignalDesc>Temperature</SignalDesc>
+      <Store>N/A</Store>
+    </Signals>
+    <EnableRinse>No</EnableRinse>
+    <RinseDrawSpeed>1000</RinseDrawSpeed>
+    <RinseEjectSpeed>1000</RinseEjectSpeed>
+    <RinseVolume>1.3</RinseVolume>
+    <RinseVolume2>2</RinseVolume2>
+    <ValveSwitchTime1>0</ValveSwitchTime1>
+    <ValveSwitchTime2>0</ValveSwitchTime2>
+    <ValveSwitchTime3>0</ValveSwitchTime3>
+    <ValveSwitchTime4>0</ValveSwitchTime4>
+    <ValveMovements>0</ValveMovements>
+    <NRdyTemperatureRange />
+    <ThermostatTemperature />
+    <DrawPositionDetection>0</DrawPositionDetection>
+    <DrawSpeed>200</DrawSpeed>
+    <EjectSpeed>200</EjectSpeed>
+    <InjVolume>1</InjVolume>
+    <DrawPosition>0</DrawPosition>
+    <InjectMode>Needle Wash</InjectMode>
+    <WashVessel>N/A</WashVessel>
+    <OverlapTime>Disable Overlapped Injection</OverlapTime>
+    <FlushOutFactor>5</FlushOutFactor>
+    <EnableBypass>No</EnableBypass>
+    <WaitAfterDraw>0</WaitAfterDraw>
+    <WashLocation>FlushPort</WashLocation>
+    <WashTime>2</WashTime>
+    <WashCycles>N/A</WashCycles>
+    <InjProgram />
+  </WPS>
+  <BinPump>
+    <ComponentModelName>BinPump-SL</ComponentModelName>
+    <ComponentModel>G1312B</ComponentModel>
+    <ComponentOrdinal>1</ComponentOrdinal>
+    <ComponentOptions>SSV</ComponentOptions>
+    <Version>0.2.041.0; Base: 0.2.064.0</Version>
+    <Stoptime>3.5</Stoptime>
+    <Posttime>Off</Posttime>
+    <Delay>0</Delay>
+    <CONTACT_1>0</CONTACT_1>
+    <CONTACT_2>0</CONTACT_2>
+    <CONTACT_3>0</CONTACT_3>
+    <CONTACT_4>0</CONTACT_4>
+    <ContactsTimetable />
+    <Signals>
+      <SignalDesc>Pressure</SignalDesc>
+      <Store>0</Store>
+    </Signals>
+    <Signals>
+      <SignalDesc>Flow</SignalDesc>
+      <Store>0</Store>
+    </Signals>
+    <Signals>
+      <SignalDesc>Solvent% A</SignalDesc>
+      <Store>0</Store>
+    </Signals>
+    <Signals>
+      <SignalDesc>Solvent% B</SignalDesc>
+      <Store>0</Store>
+    </Signals>
+    <Signals>
+      <SignalDesc>Direction of piston A</SignalDesc>
+      <Store>0</Store>
+    </Signals>
+    <Signals>
+      <SignalDesc>Direction of piston B</SignalDesc>
+      <Store>0</Store>
+    </Signals>
+    <UseSolvCalibration>1</UseSolvCalibration>
+    <SolvCalibrationNameA>H2O</SolvCalibrationNameA>
+    <SolvCalibrationNameB>MeOH</SolvCalibrationNameB>
+    <SolvCalibrationNameC>H2O</SolvCalibrationNameC>
+    <SolvCalibrationNameD>MeOH</SolvCalibrationNameD>
+    <SolvCalibrationIndexA>-2</SolvCalibrationIndexA>
+    <SolvCalibrationIndexB>-4</SolvCalibrationIndexB>
+    <SolvCalibrationIndexC>-2</SolvCalibrationIndexC>
+    <SolvCalibrationIndexD>-4</SolvCalibrationIndexD>
+    <PressureOperatingLimit>0</PressureOperatingLimit>
+    <StrokeA>Auto</StrokeA>
+    <Flow>0.4</Flow>
+    <SolvRatioA>85</SolvRatioA>
+    <SolvNameA>5 mM NH4OAc</SolvNameA>
+    <PressureMin>0</PressureMin>
+    <PressureMax>400</PressureMax>
+    <FRamp>100</FRamp>
+    <FPTimetable />
+    <StrokeB>Auto</StrokeB>
+    <CompressA>100</CompressA>
+    <CompressB>115</CompressB>
+    <SolvRatioB>15</SolvRatioB>
+    <SolvNameB>5 mM NH4OAc</SolvNameB>
+    <SolvNameC>.1% FA 10mM NH4OFm</SolvNameC>
+    <SolvNameD>.1% FA 10mM NH4OFm</SolvNameD>
+    <SSVA>0</SSVA>
+    <SSVB>0</SSVB>
+  </BinPump>
+  <TCC>
+    <ComponentModelName>Column-SL</ComponentModelName>
+    <ComponentModel>G1316B</ComponentModel>
+    <ComponentOrdinal>1</ComponentOrdinal>
+    <ComponentOptions>CSV</ComponentOptions>
+    <Version>0.2.040.0; Base: 0.2.064.0</Version>
+    <Stoptime>As Pump</Stoptime>
+    <Posttime>Off</Posttime>
+    <Delay>0</Delay>
+    <CONTACT_1>0</CONTACT_1>
+    <CONTACT_2>0</CONTACT_2>
+    <CONTACT_3>0</CONTACT_3>
+    <CONTACT_4>0</CONTACT_4>
+    <ContactsTimetable />
+    <Signals>
+      <SignalDesc>Temperature of left heat exchanger</SignalDesc>
+      <Store>1</Store>
+    </Signals>
+    <Signals>
+      <SignalDesc>Temperature of right heat exchanger</SignalDesc>
+      <Store>0</Store>
+    </Signals>
+    <LeftRemoteTemp>0</LeftRemoteTemp>
+    <RightRemoteTemp>0</RightRemoteTemp>
+    <ColumnPlumbing>0</ColumnPlumbing>
+    <LeftTemp>60</LeftTemp>
+    <RightTemp>Not Controlled</RightTemp>
+    <RightTempValue>60</RightTempValue>
+    <LeftReady>With Any Temp</LeftReady>
+    <RightReady>0.8</RightReady>
+    <TwoTemperatures />
+    <ColumnValve>1</ColumnValve>
+    <TemperatureTimetable />
+  </TCC>
+  <QTOF>
+    <ComponentModel>G6510A</ComponentModel>
+    <ComponentName>MS Q-TOF</ComponentName>
+    <IonSource>Dual ESI</IonSource>
+    <TuneFile>AutoTune.tun</TuneFile>
+    <StopMode>NoLimit</StopMode>
+    <StopTime>30.00</StopTime>
+    <NoWaitForTemp>Disable</NoWaitForTemp>
+    <MS1CentroidDataAbsThreshold>200</MS1CentroidDataAbsThreshold>
+    <MS1CentroidDataRELThreshold>0.010</MS1CentroidDataRELThreshold>
+    <MS2CentroidDataAbsThreshold>5</MS2CentroidDataAbsThreshold>
+    <MS2CentroidDataRELThreshold>0.010</MS2CentroidDataRELThreshold>
+    <TimeSegment>
+      <Index>1</Index>
+      <StartTime>0.0</StartTime>
+      <DivertValveState>MS</DivertValveState>
+      <StorageMode>Both</StorageMode>
+      <IonMode>ESI</IonMode>
+      <TimeSourceParameter>
+        <Id>DGasHeater</Id>
+        <Value>350</Value>
+      </TimeSourceParameter>
+      <TimeSourceParameter>
+        <Id>DGasFlow</Id>
+        <Value>10.0</Value>
+      </TimeSourceParameter>
+      <TimeSourceParameter>
+        <Id>NebulizerPressure</Id>
+        <Value>45</Value>
+      </TimeSourceParameter>
+      <ScanSegment>
+        <Index>1</Index>
+        <ionPolarity>Positive</ionPolarity>
+        <ScanSourceParameter>
+          <Id>VCap</Id>
+          <Value>1500</Value>
+        </ScanSourceParameter>
+        <ScanInstParameter>
+          <Id>Fragmentor</Id>
+          <Value>175</Value>
+        </ScanInstParameter>
+        <ScanInstParameter>
+          <Id>Skimmer1</Id>
+          <Value>65</Value>
+        </ScanInstParameter>
+        <ScanInstParameter>
+          <Id>OctopoleRFPeak</Id>
+          <Value>750</Value>
+        </ScanInstParameter>
+      </ScanSegment>
+      <Acquisition>
+        <AcqMode>TargetedMS2</AcqMode>
+        <AcqTargetedMS2>
+          <MS1MinRange>100</MS1MinRange>
+          <MS1MaxRange>1000</MS1MaxRange>
+          <MS1ScanRate>1.0</MS1ScanRate>
+          <MS2MinRange>100</MS2MinRange>
+          <MS2MaxRange>1000</MS2MaxRange>
+          <MS2ScanRate>1.0</MS2ScanRate>
+          <MaxTimeBetweenMS1>0.0</MaxTimeBetweenMS1>
+          <CollisionEnergy>
+            <CollisionEnergyFixed>0.0000</CollisionEnergyFixed>
+          </CollisionEnergy>
+        </AcqTargetedMS2>
+      </Acquisition>
+    </TimeSegment>
+    <TimeSegment>
+      <Index>2</Index>
+      <StartTime>1.4</StartTime>
+      <DivertValveState>MS</DivertValveState>
+      <StorageMode>Both</StorageMode>
+      <IonMode>ESI</IonMode>
+      <TimeSourceParameter>
+        <Id>DGasHeater</Id>
+        <Value>350</Value>
+      </TimeSourceParameter>
+      <TimeSourceParameter>
+        <Id>DGasFlow</Id>
+        <Value>10.0</Value>
+      </TimeSourceParameter>
+      <TimeSourceParameter>
+        <Id>NebulizerPressure</Id>
+        <Value>45</Value>
+      </TimeSourceParameter>
+      <ScanSegment>
+        <Index>1</Index>
+        <ionPolarity>Positive</ionPolarity>
+        <ScanSourceParameter>
+          <Id>VCap</Id>
+          <Value>1500</Value>
+        </ScanSourceParameter>
+        <ScanInstParameter>
+          <Id>Fragmentor</Id>
+          <Value>175</Value>
+        </ScanInstParameter>
+        <ScanInstParameter>
+          <Id>Skimmer1</Id>
+          <Value>65</Value>
+        </ScanInstParameter>
+        <ScanInstParameter>
+          <Id>OctopoleRFPeak</Id>
+          <Value>750</Value>
+        </ScanInstParameter>
+      </ScanSegment>
+      <Acquisition>
+        <AcqMode>TargetedMS2</AcqMode>
+        <AcqTargetedMS2>
+          <MS1MinRange>100</MS1MinRange>
+          <MS1MaxRange>1000</MS1MaxRange>
+          <MS1ScanRate>1.0</MS1ScanRate>
+          <MS2MinRange>100</MS2MinRange>
+          <MS2MaxRange>1000</MS2MaxRange>
+          <MS2ScanRate>1.0</MS2ScanRate>
+          <MaxTimeBetweenMS1>0.0</MaxTimeBetweenMS1>
+          <CollisionEnergy>
+            <CollisionEnergyFixed>0.0000</CollisionEnergyFixed>
+          </CollisionEnergy>
+          <Target>
+            <TargetMass>279.091022</TargetMass>
+            <TargetCharge>1</TargetCharge>
+            <TargetRetentionTime>1.40</TargetRetentionTime>
+            <TargetDeltaRetentionTime>999.00</TargetDeltaRetentionTime>
+            <TargetIsolationWidth>Medium (~4 amu)</TargetIsolationWidth>
+            <TargetCollisionEnergy>15.0000</TargetCollisionEnergy>
+            <TargetScanRate>1000</TargetScanRate>
+          </Target>
+        </AcqTargetedMS2>
+      </Acquisition>
+    </TimeSegment>
+    <TimeSegment>
+      <Index>3</Index>
+      <StartTime>2.4</StartTime>
+      <DivertValveState>MS</DivertValveState>
+      <StorageMode>Both</StorageMode>
+      <IonMode>ESI</IonMode>
+      <TimeSourceParameter>
+        <Id>DGasHeater</Id>
+        <Value>350</Value>
+      </TimeSourceParameter>
+      <TimeSourceParameter>
+        <Id>DGasFlow</Id>
+        <Value>10.0</Value>
+      </TimeSourceParameter>
+      <TimeSourceParameter>
+        <Id>NebulizerPressure</Id>
+        <Value>45</Value>
+      </TimeSourceParameter>
+      <ScanSegment>
+        <Index>1</Index>
+        <ionPolarity>Positive</ionPolarity>
+        <ScanSourceParameter>
+          <Id>VCap</Id>
+          <Value>1500</Value>
+        </ScanSourceParameter>
+        <ScanInstParameter>
+          <Id>Fragmentor</Id>
+          <Value>175</Value>
+        </ScanInstParameter>
+        <ScanInstParameter>
+          <Id>Skimmer1</Id>
+          <Value>65</Value>
+        </ScanInstParameter>
+        <ScanInstParameter>
+          <Id>OctopoleRFPeak</Id>
+          <Value>750</Value>
+        </ScanInstParameter>
+      </ScanSegment>
+      <Acquisition>
+        <AcqMode>TargetedMS2</AcqMode>
+        <AcqTargetedMS2>
+          <MS1MinRange>100</MS1MinRange>
+          <MS1MaxRange>1000</MS1MaxRange>
+          <MS1ScanRate>1.0</MS1ScanRate>
+          <MS2MinRange>100</MS2MinRange>
+          <MS2MaxRange>1000</MS2MaxRange>
+          <MS2ScanRate>1.0</MS2ScanRate>
+          <MaxTimeBetweenMS1>0.0</MaxTimeBetweenMS1>
+          <CollisionEnergy>
+            <CollisionEnergyFixed>0.0000</CollisionEnergyFixed>
+          </CollisionEnergy>
+          <Target>
+            <TargetMass>311.080851</TargetMass>
+            <TargetCharge>1</TargetCharge>
+            <TargetRetentionTime>2.40</TargetRetentionTime>
+            <TargetDeltaRetentionTime>999.00</TargetDeltaRetentionTime>
+            <TargetIsolationWidth>Medium (~4 amu)</TargetIsolationWidth>
+            <TargetCollisionEnergy>20.0000</TargetCollisionEnergy>
+            <TargetScanRate>1000</TargetScanRate>
+          </Target>
+        </AcqTargetedMS2>
+      </Acquisition>
+    </TimeSegment>
+    <RefMassParameters>
+      <EnableRefMassCorrection>Enabled</EnableRefMassCorrection>
+      <UseBottleA>True</UseBottleA>
+      <RefNebulizer>5</RefNebulizer>
+      <AutoRecalibration>
+        <AverageScans>5</AverageScans>
+        <DetectionWindow>100</DetectionWindow>
+        <MinHeight>1000</MinHeight>
+      </AutoRecalibration>
+      <RefMass>121.05087300</RefMass>
+      <RefMass>922.00979800</RefMass>
+    </RefMassParameters>
+  </QTOF>
+</AcqMethod>

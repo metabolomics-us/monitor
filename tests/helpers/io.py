@@ -1,9 +1,9 @@
 import os
 
 
-def add_agilent_file(tmp):
-    print('\n-----  creating agilent file  -----')
-    agi_folder = '%s/test.d' % tmp
+def add_agilent_file(filename, tmp):
+    print('creating agilent file structure')
+    agi_folder = '%s/%s' % (tmp, filename)
     os.makedirs('%s/AcqData' % agi_folder)
 
     with open('%s/desktop.ini' % agi_folder, 'w') as agi_file:

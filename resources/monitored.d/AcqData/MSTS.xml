@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<TimeSegments xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="MSTS.xsd">
+  <Version>1</Version>
+  <TimeSegment TimeSegmentID="1">
+    <StartTime>0.00206666666666667</StartTime>
+    <EndTime>1.39888333333333</EndTime>
+    <NumOfScans>422</NumOfScans>
+    <FixedCycleLength>0</FixedCycleLength>
+  </TimeSegment>
+  <TimeSegment TimeSegmentID="2">
+    <StartTime>1.40773333333333</StartTime>
+    <EndTime>2.39856666666667</EndTime>
+    <NumOfScans>177</NumOfScans>
+    <FixedCycleLength>0</FixedCycleLength>
+  </TimeSegment>
+  <TimeSegment TimeSegmentID="3">
+    <StartTime>2.40595</StartTime>
+    <EndTime>3.47176666666667</EndTime>
+    <NumOfScans>189</NumOfScans>
+    <FixedCycleLength>0</FixedCycleLength>
+  </TimeSegment>
+</TimeSegments>

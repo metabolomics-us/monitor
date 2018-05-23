@@ -1,9 +1,10 @@
 import os
 import time
 import zipfile
+from multiprocessing import Process
 
 
-class AgilentWorker(object):
+class AgilentWorker(Process):
     """Worker class that zips an agilent folder
 
     Parameters
@@ -16,7 +17,8 @@ class AgilentWorker(object):
             A queue to hold the files to be converted to mzml
     """
 
-    def __init__(self, st_cli, zipping_q, conversion_q):
+    def __init__(self, st_cli, zipping_q, conversion_q, name='agilent_worker'):
+        super().__init__(name=name)
         self.stasis_cli = st_cli
         self.zipping_q = zipping_q
         self.conversion_q = conversion_q
