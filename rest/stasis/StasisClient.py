@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import os
 from http.client import HTTPConnection
 
@@ -15,7 +18,6 @@ class StasisClient(object):
     """
 
     HTTPConnection.debugLevel=1
-
     stasis_url = ""
 
     def __init__(self, api_url):

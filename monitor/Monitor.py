@@ -1,9 +1,12 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import time
-from multiprocessing import Process, JoinableQueue
+from multiprocessing import JoinableQueue
 
 from watchdog.observers import Observer
 
-import monitor
+from monitor.NewFileScanner import NewFileScanner
 from monitor.workers.AgilentWorker import AgilentWorker
 from monitor.workers.ConversionWorker import ConversionWorker
 
@@ -29,7 +32,7 @@ class Monitor(object):
         self.running = True
 
     def start(self):
-        """Initializes the scanning for files"""
+        """Starts the monitoring of the selected folders"""
         zipping_q = JoinableQueue()
         conversion_q = JoinableQueue()
 
@@ -50,7 +53,7 @@ class Monitor(object):
             print(f"starting thread {t.name}...")
             t.start()
 
-        event_handler = monitor.NewFileScanner(
+        event_handler = NewFileScanner(
             self.stasis_cli,
             zipping_q,
             conversion_q,

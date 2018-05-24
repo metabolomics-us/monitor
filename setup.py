@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from distutils.core import setup
+from setuptools import setup
 
 setup(name='Monitor',
       version='0.1',
@@ -10,4 +10,10 @@ setup(name='Monitor',
       url='https://bitbucket.org/fiehnlab/monitor',
       packages=['monitor', 'rest'],
       data_files=[('config', ['appconfig.yaml'])],
+      install_requires=[
+        'requests>=2.18.4',
+        'simplejson>=3.15.0',
+        'yamlconf>=0.2.3',
+        'watchdog>=0.8.3',
+      ],
       )

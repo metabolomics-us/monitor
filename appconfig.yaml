@@ -23,5 +23,5 @@ stasis:
   port: "80"
 
 dataform:
-  url: "http://phobos.fiehnlab.ucdavis.edu"
+  url: "http://luna.fiehnlab.ucdavis.edu"
   port: "9090"
