@@ -51,3 +51,8 @@ class ConversionWorker(Process):
                 print("stopping conversion_worker")
                 self.conversion_q.join()
                 running = False
+            except Exception as ex:
+                print("Error: %s" % ex.args)
+                print('skipping this sample conversion (%s)' % str(item))
+                self.conversion_q.task_done()
+                pass

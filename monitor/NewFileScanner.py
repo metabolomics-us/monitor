@@ -43,10 +43,10 @@ class NewFileScanner(FileSystemEventHandler):
             # if it's a .d folder
             if (event.src_path.endswith('.d')):
                 print("event %s" % event)
-                # 3. trigger status acquired
-                self.stasis_cli.set_tracking(file, "acquired")
-                # 3.5 add to zipping queue
+                # 3. add to zipping queue
                 self.zipping_q.put(event.src_path)
+                # 3.5 trigger status acquired
+                self.stasis_cli.set_tracking(file, "acquired")
         else:
             # if it's a regular file
             fileName, fileExtension = os.path.splitext(file)

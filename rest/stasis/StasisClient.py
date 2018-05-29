@@ -36,11 +36,13 @@ class StasisClient(object):
         if(status not in ['entered', 'acquired', 'converted', 'processed', 'exported']):
             return False
 
-        print("...setting tracking for sample %s to %s ..." % (sample, status))
 
         url = self.stasis_url + "/stasis/tracking"
         filename, ext = os.path.splitext(sample.split('/')[-1])
+        print("cleaned filename: %s" % filename)
         payload = json.dumps({"sample":filename, "status":status, "fileHandle":(filename + ext)})
+
+        print("\tsetting tracking for sample %s to %s" % (filename, status))
 
         print("request data:\n\turl: %s\n\tdata: %s" % (url, payload))
         headers = {"Content-Type": "application/json"}

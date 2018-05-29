@@ -18,13 +18,16 @@ class AgilentWorker(Process):
             A queue to hold the folders to be compressed
         conversion_q: multiprocessing.JoinableQueue
             A queue to hold the files to be converted to mzml
+        storage: str
+            Destiantion of the zipped file (to avoid zipping in the raw data folder and having permission issues)
     """
 
-    def __init__(self, st_cli, zipping_q, conversion_q, name='agilent_worker'):
+    def __init__(self, st_cli, zipping_q, conversion_q, storage, name='agilent_worker'):
         super().__init__(name=name)
         self.stasis_cli = st_cli
         self.zipping_q = zipping_q
         self.conversion_q = conversion_q
+        self.storage = storage
 
     def run(self):
         """Starts the processing of elements in the zipping queue"""
@@ -47,7 +50,13 @@ class AgilentWorker(Process):
             except KeyboardInterrupt:
                 print("stopping agilent_worker")
                 self.zipping_q.join()
+                self.conversion_q.join()
                 running = False
+            except Exception as ex:
+                print('Got exception: %s' % str(ex))
+                print('Skipping current sample (%s)' % str(item))
+                self.zipping_q.task_done()
+                pass
 
     def __compress(self, folder):
         """Compresses a folder, and adds it to the conversion queue
@@ -57,7 +66,8 @@ class AgilentWorker(Process):
             folder : str
                 The folder to be compressed
         """
-        print("compressing folder %s..." % folder)
+        origin = os.path.dirname(folder)
+        print("compressing folder %s to %s" % (origin, self.storage))
 
         zipped = zipfile.ZipFile(f"{folder}.zip", 'w', zipfile.ZIP_DEFLATED)
 

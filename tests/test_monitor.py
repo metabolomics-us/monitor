@@ -5,12 +5,12 @@ from multiprocessing import Process
 
 import yamlconf
 
-import monitor
+from monitor.Monitor import Monitor
 from rest.dataformer.DataformerClient import DataformerClient
 from rest.stasis.StasisClient import StasisClient
 
 
-class TestMonitorWorkers(object):
+class TestMonitorApp(object):
     @classmethod
     def setup_class(cls):
         with open('../appconfig.yaml', 'r') as conf:
@@ -19,11 +19,12 @@ class TestMonitorWorkers(object):
     def create_file_delayed(self, raw_filename, tmpdir, delay, count):
         print("\tfile creator sleeping for %d seconds..." % delay)
         time.sleep(delay)
-        print("\twake up lazy bas@#$*!!!")
+        print("\twake up lazy thread!!!")
 
         for c in range(count):
             raw_fname, raw_ext = os.path.splitext(raw_filename)
-            destination = "%s/%s-%d%s" % (tmpdir, raw_fname.split('/')[-1], c, raw_ext)
+            destination = "%s/extra/path/%s-%d%s" % (tmpdir, raw_fname.split('/')[-1], c, raw_ext)
+            not os.path.exists(destination) or os.makedirs(destination)
             print("\tcopying %s to %s" % (raw_filename, destination))
             shutil.copytree(raw_filename, destination)
             time.sleep(1)
@@ -38,7 +39,7 @@ class TestMonitorWorkers(object):
                                   self.config['dataform']['port'],
                                   self.config['monitor']['storage'])
 
-        filemon = monitor.Monitor(self.config, st_cli, df_cli)
+        filemon = Monitor(self.config, st_cli, df_cli)
 
         delay = 3
         count = 5
