@@ -36,7 +36,7 @@ class Monitor(object):
         zipping_q = JoinableQueue()
         conversion_q = JoinableQueue()
 
-        agilent_worker = AgilentWorker(self.stasis_cli, zipping_q, conversion_q)
+        agilent_worker = AgilentWorker(self.stasis_cli, zipping_q, conversion_q, self.config['monitor']['storage'])
         agilent_worker.daemon = True
 
         conversion_worker = ConversionWorker(
