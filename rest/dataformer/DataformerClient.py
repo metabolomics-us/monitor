@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import os
 
 import requests
+
 
 class DataformerClient(object):
     """Simple DataFormer rest rest client
@@ -20,21 +22,21 @@ class DataformerClient(object):
         self.dataformer_url = f"{api_url}:{api_port}"
         self.storage = storage
 
-    def convert(self, filename, type):
+    def convert(self, filepath, type):
         """Converts a file to specified type
 
         Parameters
         ----------
-            filename : str
+            filepath : str
                 The name of the file to download
             type : str
                 The converted type, valid values are: 'mzml' or 'mzxml'
         """
-        print(" convert %s to %s" % (filename, type))
+        print(" convert %s to %s" % (filepath, type))
 
         try:
-            if(self.__private_upload(filename)):
-                d = self.__private_download(filename, type)
+            if (self.__private_upload(filepath)):
+                d = self.__private_download(filepath, type)
                 print("downloaded %s" % d)
                 return d
             else:
@@ -43,20 +45,19 @@ class DataformerClient(object):
             print("ERROR: " + str(ex.args))
             return ""
 
-
-    def __private_upload(self, filename):
+    def __private_upload(self, filepath):
         """Uploads a file to be converted
 
         Parameters
         ----------
-            filename : str
+            filepath : str
                 The raw data file to be uploaded and converted (the conversion happens automatically)
         """
-        print("...upoloading %s" % filename)
+        print("...upoloading %s" % filepath)
 
         url = f"{self.dataformer_url}/rest/conversion/upload"
 
-        with open(filename, "rb") as upFile:
+        with open(filepath, "rb") as upFile:
             uploaded = requests.post(url, files={"file":upFile})
 
         if uploaded.status_code == 200:
@@ -79,12 +80,12 @@ class DataformerClient(object):
         if(filetype.lower() not in ['mzml', 'mzxml']):
             raise Exception("Unsupported filename filetype, please use 'mzml' or 'mzxml'")
 
-        filename = filename.split('/')[-1]
+        filename = filename.split(os.sep)[-1]
 
         print("...download %s version of %s" % (filetype, filename))
         data = requests.get("%s/rest/conversion/download/%s/%s" % (self.dataformer_url, filename, filetype))
 
-        download = "%s/%s.%s" % (self.storage, filename.strip(".d.zip"), filetype)
+        download = os.path.join(self.storage, "%s.%s" % (filename.strip(".d.zip"), filetype))
 
         with open(download, "wb") as converted:
             converted.write(data.content)
