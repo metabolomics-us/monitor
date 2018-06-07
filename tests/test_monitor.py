@@ -2,6 +2,7 @@ import os
 import shutil
 import time
 from multiprocessing import Process
+from os import path
 
 import yamlconf
 
@@ -22,9 +23,9 @@ class TestMonitorApp(object):
         print("\twake up lazy thread!!!")
 
         for c in range(count):
-            raw_fname, raw_ext = os.path.splitext(raw_filename)
-            destination = "%s/extra/path/%s-%d%s" % (tmpdir, raw_fname.split('/')[-1], c, raw_ext)
-            not os.path.exists(destination) or os.makedirs(destination)
+            raw_fname, raw_ext = path.splitext(raw_filename)
+            destination = path.join(tmpdir, "extra", "path", "%s-%d%s" % (raw_fname.split(os.sep)[-1], c, raw_ext))
+            not path.exists(destination) or os.makedirs(destination)
             print("\tcopying %s to %s" % (raw_filename, destination))
             shutil.copytree(raw_filename, destination)
             time.sleep(1)
@@ -47,7 +48,7 @@ class TestMonitorApp(object):
         mon_thread = Process(target=filemon.start)
         # mon_thread.daemon = True # not allowed to have children
 
-        raw_filename = "../resources/monitored.d"
+        raw_filename = path.join("..", "resources", "monitored.d")
         file_thread = Process(target=self.create_file_delayed, args=(raw_filename, tmpdir, delay, count))
 
         print("about to start monitor")
@@ -63,7 +64,9 @@ class TestMonitorApp(object):
         print("monitor joined")
         mon_thread.terminate()
 
-        raw_fname, raw_ewxt = os.path.splitext(raw_filename.split('/')[-1])
+        raw_fname, raw_ext = path.splitext(raw_filename.split(os.sep)[-1])
 
-        conv_file = "%s/%s-0%s" % (tmpdir, raw_fname, ".mzml")
-        assert os.path.exists(conv_file)
+        conv_file = path.join(tmpdir, "%s-0%s" % (raw_fname, ".mzml"))
+        assert path.exists(conv_file)
+
+        os.rmdir(tmpdir)

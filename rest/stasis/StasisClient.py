@@ -38,7 +38,7 @@ class StasisClient(object):
 
 
         url = self.stasis_url + "/stasis/tracking"
-        filename, ext = os.path.splitext(sample.split('/')[-1])
+        filename, ext = os.path.splitext(sample.split(os.sep)[-1])
         print("cleaned filename: %s" % filename)
         payload = json.dumps({"sample":filename, "status":status, "fileHandle":(filename + ext)})
 
@@ -54,3 +54,15 @@ class StasisClient(object):
             print("\tfail\n%d - %s" % (resp.status_code, resp.reason))
 
         return resp.status_code == 200
+
+    def get_tracking(self, sample):
+        url = self.stasis_url + '/stasis/tracking/' + sample
+
+        print("URL: %s" % url)
+
+        resp = requests.get(url)
+
+        print("MY RESPONSE: " + resp.text)
+        print("MY headers: " + resp.headers)
+
+        return resp

@@ -1,7 +1,6 @@
 monitor:
   paths:
-    - "/home/diego/tmp"
-    - "/home/diego/.carrot_storage"
+    - "/home/diego/.carrot_storage/deconvolution"
 
   extensions:
     - ".d"
@@ -9,14 +8,14 @@ monitor:
     - ".mzxml"
     - ".raw"
     - ".wiff"
+    - ".cdf"
+    - ".peg"
+    - ".txt"
 
 # to be added - we don't have any converter for these files yet
-#    - ".cdf"
-#    - ".peg"
-#    - ".txt"
 #    - ".smp"
 
-  storage: "/home/diego/.carrot_storage"
+  storage: "/home/diego/.carrot_storage/tmp"
 
 stasis:
   url: "https://test-api.metabolomics.us"

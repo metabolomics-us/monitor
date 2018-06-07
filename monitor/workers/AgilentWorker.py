@@ -66,11 +66,11 @@ class AgilentWorker(Process):
             folder : str
                 The folder to be compressed
         """
-        filename = folder.split('/')[-1]
+        filename = folder.split(os.sep)[-1]
         print('filename: %s' % filename)
-        print("compressing folder %s to %s/%s.zip" % (folder, self.storage, filename))
+        print('compressing folder %s to %s/%s.zip' % (folder, self.storage, filename))
 
-        zf = '%s/%s.zip' % (self.storage, filename)
+        zf = os.path.join(self.storage, filename + '.zip')
         zipped = zipfile.ZipFile(zf, 'w', zipfile.ZIP_DEFLATED)
 
         # The root directory within the ZIP folder.

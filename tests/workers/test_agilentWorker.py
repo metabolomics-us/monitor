@@ -17,7 +17,7 @@ class TestAgilentWorker(unittest.TestCase):
 
     # cleanup
     def tearDown(self):
-        os.remove('%s/%s.zip' % (self.config['monitor']['storage'], self.agi_file.split('/')[-1]))
+        os.remove('%s/%s.zip' % (self.config['monitor']['storage'], self.agi_file.split(os.sep)[-1]))
 
     def test_agilentWorker(self):
         self.load_config()
@@ -33,9 +33,9 @@ class TestAgilentWorker(unittest.TestCase):
         zip_q.put('bad_file.d')
         # process next valid item in queue
         zip_q.put(self.agi_file)
-        print('original: %s' % self.agi_file.split('/')[-1])
+        print('original: %s' % self.agi_file.split(os.sep)[-1])
 
         worker.daemon = True
         worker.start()
         worker.join(timeout=5)
-        assert (os.path.exists('%s/%s.zip' % (self.config['monitor']['storage'], self.agi_file.split('/')[-1])))
+        assert (os.path.exists('%s/%s.zip' % (self.config['monitor']['storage'], self.agi_file.split(os.sep)[-1])))
