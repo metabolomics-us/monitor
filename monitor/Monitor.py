@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import time
-from multiprocessing import JoinableQueue
+from queue import Queue
 
 from watchdog.observers import Observer
 
@@ -34,9 +34,9 @@ class Monitor(object):
 
     def start(self):
         """Starts the monitoring of the selected folders"""
-        zipping_q = JoinableQueue()
-        conversion_q = JoinableQueue()
-        upload_q = JoinableQueue()
+        zipping_q = Queue()
+        conversion_q = Queue()
+        upload_q = Queue()
 
         # Setup the zipping worker
         agilent_worker = AgilentWorker(
@@ -63,7 +63,7 @@ class Monitor(object):
         threads = [agilent_worker, conversion_worker, aws_worker]
 
         for t in threads:
-            print(f"starting thread {t.name}...")
+            print('starting thread %s...' % t.name)
             t.start()
 
         event_handler = NewFileScanner(
@@ -76,7 +76,7 @@ class Monitor(object):
 
         observer = Observer()
         for p in self.config['monitor']['paths']:
-            print(f'adding path {p} to observer')
+            print('adding path %s to observer' % p)
             observer.schedule(event_handler, p, recursive=True)
         observer.start()
 

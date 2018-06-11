@@ -68,5 +68,3 @@ class TestMonitorApp(object):
 
         conv_file = path.join(tmpdir, "%s-0%s" % (raw_fname, ".mzml"))
         assert path.exists(conv_file)
-
-        os.rmdir(tmpdir)

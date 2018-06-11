@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from multiprocessing import Process
+from threading import Thread
 
 
-class ConversionWorker(Process):
+class ConversionWorker(Thread):
     """Worker class that converts a raw data file to mzml
 
     Parameters
@@ -13,9 +13,9 @@ class ConversionWorker(Process):
             Rest client object to interact with the stasis api
         df_cli: DataformerClient
             Rest client object to interact with the dataformer api
-        conversion_q: JoinableQueue
+        conversion_q: Queue
             A queue to hold the files to be converted to mzml
-        upload_q: JoinableQueue
+        upload_q: Queue
             A queue to hold the files to be uploaded to aws bucket
         storage: str
             A folder destination for the converted files

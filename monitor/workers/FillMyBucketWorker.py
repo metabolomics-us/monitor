@@ -1,19 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import os
-from multiprocessing import Process
+from threading import Thread
 
 from monitor.Bucket import Bucket
 
 
-class FillMyBucketWorker(Process):
+class FillMyBucketWorker(Thread):
     """Worker class that uploads each file in it's to an S3 bucket
 
     Parameters
     ----------
         bucket_name: str
             Name of the S3 bucket this worker is uploading to
-        upload_q: JoinableQueue
+        upload_q: Queue
             A queue that contains the filenames to be uploaded
     """
 
@@ -30,11 +29,9 @@ class FillMyBucketWorker(Process):
         while running:
             try:
                 item = self.upload_q.get()
-                # data = open(item, 'rb')
-                filename = item.split(os.sep)[-1]
-                print('uploading %s as \'%s\' to bucket' % (item, filename))
+                # filename = item.split(os.sep)[-1]
+                # print('uploading %s as \'%s\' to bucket' % (item, filename))
                 self.bucket.save(item)
-                print('\tuploaded')
                 self.upload_q.task_done()
             except KeyboardInterrupt:
                 print('stopping aws_worker')

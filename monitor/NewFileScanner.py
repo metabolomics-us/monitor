@@ -14,9 +14,9 @@ class NewFileScanner(FileSystemEventHandler):
     ----------
         st_cli: StasisClient
             Rest client object to interact with the stasis api
-        zipping_q: JoinableQueue
+        zipping_q: Queue
             Queue of folders to be zipped.
-        conversion_q: JoinableQueue
+        conversion_q: Queue
             Queue of raw data files to be converted to mzml
         extensions: array
             An array of valid file extensions (['.d','.raw'])

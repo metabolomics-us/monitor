@@ -4,19 +4,19 @@
 import os
 import time
 import zipfile
-from multiprocessing import Process
+from threading import Thread
 
 
-class AgilentWorker(Process):
+class AgilentWorker(Thread):
     """Worker class that zips an agilent folder
 
     Parameters
     ----------
         st_cli: StasisClient
             Rest client object to interact with the stasis api
-        zipping_q: multiprocessing.JoinableQueue
+        zipping_q: Queue
             A queue to hold the folders to be compressed
-        conversion_q: multiprocessing.JoinableQueue
+        conversion_q: Queue
             A queue to hold the files to be converted to mzml
         storage: str
             Destiantion of the zipped file (to avoid zipping in the raw data folder and having permission issues)

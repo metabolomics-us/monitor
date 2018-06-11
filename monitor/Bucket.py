@@ -27,7 +27,6 @@ class Bucket:
         :param filename: the name of the file to be uploaded
         :return:
         """
-        print('saving %s as %s' % (filename, filename.split(os.sep)[-1]))
         return self.s3.meta.client.upload_file(filename, self.bucket_name, filename.split(os.sep)[-1])
 
     def load(self, name):
@@ -75,7 +74,4 @@ class Bucket:
         self.s3.Object(self.bucket_name, name).delete()
 
     def list(self):
-        print('buckets: %s' % boto3.client('s3').list_buckets())
-        print('location: %s' % boto3.client('s3').get_bucket_location(Bucket=self.bucket_name))
-
         return boto3.client('s3').list_objects(Bucket=self.bucket_name)

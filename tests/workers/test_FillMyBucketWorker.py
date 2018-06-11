@@ -12,7 +12,7 @@ class TestFillMyBucketWorker():
 
         worker = FillMyBucketWorker('test-data-carrot', upload_q)
         bucket = worker.bucket
-        assert not worker.exists(mzml_file)
+        assert not bucket.exists(mzml_file)
 
         # process next valid item in queue
         upload_q.put(mzml_file)
@@ -21,4 +21,4 @@ class TestFillMyBucketWorker():
         worker.start()
         worker.join(timeout=2)
 
-        assert worker.exists('test.mzml')
+        assert bucket.exists('test.mzml')
