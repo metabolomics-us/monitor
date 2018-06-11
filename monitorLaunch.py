@@ -29,13 +29,14 @@ def start_watching(config):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-c', '--config', type = str, default = 'appconfig.yaml', help = 'path to the yaml configuration file to use (default: ./appconfig.yaml)')
+    parser.add_argument('-c', '--config', type=str, default='appconfig.yml',
+                        help='path to the yaml configuration file to use (default: ./appconfig.yml)')
     args = parser.parse_args()
 
     if args.config:
         configFile = args.config
     else:
-        configFile = 'appconfig.yaml'
+        configFile = 'appconfig.yml'
 
     with open(configFile, 'r') as stream:
         config = yamlconf.load(stream)

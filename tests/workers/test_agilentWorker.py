@@ -9,18 +9,17 @@ from monitor.workers.AgilentWorker import AgilentWorker
 
 
 class TestAgilentWorker(unittest.TestCase):
-    agi_file = '../../resources/monitored.d'
+    agi_file = os.path.join('..', '..', 'resources', 'monitored.d')
 
-    def load_config(self):
-        with open('../../appconfig.yaml', 'r') as stream:
+    def setUp(self):
+        with open(os.path.join('..', '..', 'appconfig.yml'), 'r') as stream:
             self.config = yamlconf.load(stream)
 
     # cleanup
     def tearDown(self):
-        os.remove('%s/%s.zip' % (self.config['monitor']['storage'], self.agi_file.split(os.sep)[-1]))
+        os.remove(os.path.join(self.config['monitor']['storage'], '%s.zip' % self.agi_file.split(os.sep)[-1]))
 
     def test_agilentWorker(self):
-        self.load_config()
         st_cli = MagicMock(name='stasis_cli_mock')
         st_cli.return_value.add_tracking.return_value = True
 
@@ -38,4 +37,5 @@ class TestAgilentWorker(unittest.TestCase):
         worker.daemon = True
         worker.start()
         worker.join(timeout=5)
-        assert (os.path.exists('%s/%s.zip' % (self.config['monitor']['storage'], self.agi_file.split(os.sep)[-1])))
+        assert (
+            os.path.exists(os.path.join(self.config['monitor']['storage'], '%s.zip' % self.agi_file.split(os.sep)[-1])))

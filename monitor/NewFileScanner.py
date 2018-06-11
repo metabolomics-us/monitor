@@ -22,10 +22,11 @@ class NewFileScanner(FileSystemEventHandler):
             An array of valid file extensions (['.d','.raw'])
     """
 
-    def __init__(self, st_cli, zipping_q, conversion_q, extensions):
+    def __init__(self, st_cli, zipping_q, conversion_q, upload_q, extensions):
         self.stasis_cli = st_cli
         self.zipping_q = zipping_q
         self.conversion_q = conversion_q
+        self.upload_q = upload_q
         self.extensions = extensions
 
     def on_created(self, event):
@@ -64,3 +65,5 @@ class NewFileScanner(FileSystemEventHandler):
                 self.stasis_cli.set_tracking(file, "acquired")
                 # 3.5 add to conversion queue
                 self.conversion_q.put(file)
+            elif (fileExtension.lower() == '.mzml'):
+                self.upload_q.put(file)

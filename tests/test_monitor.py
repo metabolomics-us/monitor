@@ -14,7 +14,7 @@ from rest.stasis.StasisClient import StasisClient
 class TestMonitorApp(object):
     @classmethod
     def setup_class(cls):
-        with open('../appconfig.yaml', 'r') as conf:
+        with open('../appconfig.yml', 'r') as conf:
             cls.config = yamlconf.load(conf)
 
     def create_file_delayed(self, raw_filename, tmpdir, delay, count):

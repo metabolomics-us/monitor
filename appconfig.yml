@@ -24,3 +24,6 @@ stasis:
 dataform:
   url: "http://luna.fiehnlab.ucdavis.edu"
   port: "9090"
+
+aws:
+  bucketName: "data-carrot"

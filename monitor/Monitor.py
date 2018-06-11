@@ -9,6 +9,7 @@ from watchdog.observers import Observer
 from monitor.NewFileScanner import NewFileScanner
 from monitor.workers.AgilentWorker import AgilentWorker
 from monitor.workers.ConversionWorker import ConversionWorker
+from monitor.workers.FillMyBucketWorker import FillMyBucketWorker
 
 
 class Monitor(object):
@@ -35,19 +36,31 @@ class Monitor(object):
         """Starts the monitoring of the selected folders"""
         zipping_q = JoinableQueue()
         conversion_q = JoinableQueue()
+        upload_q = JoinableQueue()
 
-        agilent_worker = AgilentWorker(self.stasis_cli, zipping_q, conversion_q, self.config['monitor']['storage'])
+        # Setup the zipping worker
+        agilent_worker = AgilentWorker(
+            self.stasis_cli,
+            zipping_q,
+            conversion_q,
+            self.config['monitor']['storage'])
         agilent_worker.daemon = True
 
+        # Setup the convertion worker
         conversion_worker = ConversionWorker(
             self.stasis_cli,
             self.dataform_cli,
             conversion_q,
+            upload_q,
             self.config['monitor']['storage']
         )
         conversion_worker.daemon = True
 
-        threads = [agilent_worker, conversion_worker]
+        # Setup the aws uploader worker
+        aws_worker = FillMyBucketWorker(self.config['aws']['bucketName'], upload_q)
+        aws_worker.daemon = True
+
+        threads = [agilent_worker, conversion_worker, aws_worker]
 
         for t in threads:
             print(f"starting thread {t.name}...")
@@ -57,6 +70,7 @@ class Monitor(object):
             self.stasis_cli,
             zipping_q,
             conversion_q,
+            upload_q,
             self.config['monitor']['extensions']
         )
 

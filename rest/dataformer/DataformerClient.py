@@ -19,7 +19,7 @@ class DataformerClient(object):
     """
 
     def __init__(self, api_url, api_port, storage):
-        self.dataformer_url = f"{api_url}:{api_port}"
+        self.dataformer_url = f'{api_url}:{api_port}'
         self.storage = storage
 
     def convert(self, filepath, type):
@@ -32,18 +32,18 @@ class DataformerClient(object):
             type : str
                 The converted type, valid values are: 'mzml' or 'mzxml'
         """
-        print(" convert %s to %s" % (filepath, type))
+        print(' convert %s to %s' % (filepath, type))
 
         try:
             if (self.__private_upload(filepath)):
                 d = self.__private_download(filepath, type)
-                print("downloaded %s" % d)
+                print('downloaded %s' % d)
                 return d
             else:
-                return ""
+                return ''
         except Exception as ex:
-            print("ERROR: " + str(ex.args))
-            return ""
+            print('ERROR: ' + str(ex.args))
+            return ''
 
     def __private_upload(self, filepath):
         """Uploads a file to be converted
@@ -53,18 +53,18 @@ class DataformerClient(object):
             filepath : str
                 The raw data file to be uploaded and converted (the conversion happens automatically)
         """
-        print("...upoloading %s" % filepath)
+        print('...upoloading %s' % filepath)
 
-        url = f"{self.dataformer_url}/rest/conversion/upload"
+        url = f'{self.dataformer_url}/rest/conversion/upload'
 
-        with open(filepath, "rb") as upFile:
-            uploaded = requests.post(url, files={"file":upFile})
+        with open(filepath, 'rb') as upFile:
+            uploaded = requests.post(url, files={'file': upFile})
 
         if uploaded.status_code == 200:
-            print("\tuploaded")
+            print('\tuploaded')
             return True
         else:
-            print("\terror uploading\n%d - %s" % (uploaded.status_code, uploaded.reason))
+            print('\terror uploading\n%d - %s' % (uploaded.status_code, uploaded.reason))
             return False
 
     def __private_download(self, filename, filetype):
@@ -78,16 +78,18 @@ class DataformerClient(object):
                 The converted type, valid values are: 'mzml' or 'mzxml'
         """
         if(filetype.lower() not in ['mzml', 'mzxml']):
-            raise Exception("Unsupported filename filetype, please use 'mzml' or 'mzxml'")
+            raise Exception('Unsupported filename filetype, please use "mzml" or "mzxml"')
 
         filename = filename.split(os.sep)[-1]
 
-        print("...download %s version of %s" % (filetype, filename))
-        data = requests.get("%s/rest/conversion/download/%s/%s" % (self.dataformer_url, filename, filetype))
+        print('...download %s version of %s' % (filetype, filename))
+        data = requests.get('%s/rest/conversion/download/%s/%s' % (self.dataformer_url, filename, filetype))
 
-        download = os.path.join(self.storage, "%s.%s" % (filename.strip(".d.zip"), filetype))
+        download = os.path.join(self.storage, '%s.%s' % (filename.strip('.d.zip'), filetype))
 
-        with open(download, "wb") as converted:
+        with open(download, 'wb') as converted:
             converted.write(data.content)
 
+        print('\tcleaning raw data')
+        os.remove(os.path.join(self.storage, filename))
         return download
