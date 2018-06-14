@@ -63,7 +63,7 @@ class Monitor(object):
         threads = [agilent_worker, conversion_worker, aws_worker]
 
         for t in threads:
-            print('starting thread %s...' % t.name)
+            print("starting thread %s..." % t.name)
             t.start()
 
         event_handler = NewFileScanner(
@@ -76,11 +76,11 @@ class Monitor(object):
 
         observer = Observer()
         for p in self.config['monitor']['paths']:
-            print('adding path %s to observer' % p)
+            print("adding path %s to observer" % p)
             observer.schedule(event_handler, p, recursive=True)
         observer.start()
 
-        print('monitor started')
+        print("monitor started")
 
         try:
             while True:

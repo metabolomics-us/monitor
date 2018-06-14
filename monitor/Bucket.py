@@ -27,7 +27,7 @@ class Bucket:
         :param filename: the name of the file to be uploaded
         :return:
         """
-        return self.s3.meta.client.upload_file(filename, self.bucket_name, filename.split(os.sep)[-1])
+        return self.s3.Bucket(self.bucket_name).put_object(Key=filename.split(os.sep)[-1], Body=filename)
 
     def load(self, name):
         """

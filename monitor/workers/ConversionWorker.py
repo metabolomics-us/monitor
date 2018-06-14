@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
+import os
 from threading import Thread
 
 
@@ -36,29 +36,29 @@ class ConversionWorker(Thread):
         item = None
         while running:
             try:
-                print('general_worker looking for something to do...')
+                print("general_worker looking for something to do...\n")
                 item = self.conversion_q.get()
-
-                print("from general worker %s" % item)
 
                 # 5. upload file to converter
                 # 6  wait for file conversion to finish
                 # 7. store as mzML file
-                if (self.dataform_cli.convert(item, 'mzml')):
+                converted_file = self.dataform_cli.convert(item, 'mzml')
+                if (converted_file):
                     # 7.5 add to upload queue
-                    self.upload_q.put(item)
+                    print("putting %s in aws queue" % converted_file)
+                    self.upload_q.put(converted_file)
                     # 8. trigger status converted
-                    self.stasis_cli.set_tracking(item.replace('.zip', ''), 'converted')
+                    self.stasis_cli.set_tracking(os.path.splitext(converted_file)[0], 'converted')
                 else:
                     raise Exception({'message': 'Error uploading/converting file %s' % item})
 
                 self.conversion_q.task_done()
             except KeyboardInterrupt:
-                print('stopping conversion_worker')
+                print("stopping conversion_worker")
                 self.conversion_q.join()
                 running = False
             except Exception as ex:
-                print('Error: %s' % ex.args)
-                print('skipping this sample conversion (%s)' % str(item))
+                print("Error: %s" % ex.args)
+                print("skipping this sample conversion (%s)" % str(item))
                 self.conversion_q.task_done()
                 pass

@@ -28,17 +28,19 @@ class FillMyBucketWorker(Thread):
 
         while running:
             try:
+                print("aws_worker looking for something to do...\n")
                 item = self.upload_q.get()
-                # filename = item.split(os.sep)[-1]
-                # print('uploading %s as \'%s\' to bucket' % (item, filename))
-                self.bucket.save(item)
+
+                if (self.bucket.save(item)):
+                    print("\tfile %s saved to %s" % (item, self.bucket.bucket_name))
+
                 self.upload_q.task_done()
             except KeyboardInterrupt:
-                print('stopping aws_worker')
+                print("stopping aws_worker")
                 self.upload_q.join()
                 running = False
             except Exception as ex:
-                print('Error: %s' % str(ex))
+                print("Error uploading sample %s: %s" % (item, str(ex)))
                 self.upload_q.task_done()
                 pass
 

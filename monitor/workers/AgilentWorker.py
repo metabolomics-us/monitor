@@ -35,10 +35,9 @@ class AgilentWorker(Thread):
         running = True
         while running:
             try:
-                print('agilent_worker looking for something to do...')
+                print("agilent_worker looking for something to do...\n")
                 item = self.zipping_q.get()
                 zipsize = 0
-
                 while (os.stat(item).st_size > zipsize):
                     time.sleep(1)
                     zipsize = os.stat(item).st_size

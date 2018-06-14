@@ -66,4 +66,5 @@ class NewFileScanner(FileSystemEventHandler):
                 # 3.5 add to conversion queue
                 self.conversion_q.put(file)
             elif (fileExtension.lower() == '.mzml'):
+                print("event %s" % event)
                 self.upload_q.put(file)

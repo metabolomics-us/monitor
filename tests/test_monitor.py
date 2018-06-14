@@ -43,7 +43,7 @@ class TestMonitorApp(object):
         filemon = Monitor(self.config, st_cli, df_cli)
 
         delay = 3
-        count = 5
+        count = 2
 
         mon_thread = Process(target=filemon.start)
         # mon_thread.daemon = True # not allowed to have children
