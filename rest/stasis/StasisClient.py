@@ -31,9 +31,9 @@ class StasisClient(object):
             sample : str
                 The filename of the sample to create/adjust tracking status
             status : str
-                The new status of a file. Can be one of: 'entered', 'acquired', 'converted', 'processed', 'exported'
+                The new status of a file. Can be one of: 'entered', 'acquired', 'converted', 'processing', 'exported'
         """
-        if(status not in ['entered', 'acquired', 'converted', 'processed', 'exported']):
+        if (status not in ['entered', 'acquired', 'converted', 'processing', 'exported']):
             return False
 
 
@@ -58,11 +58,6 @@ class StasisClient(object):
     def get_tracking(self, sample):
         url = self.stasis_url + '/stasis/tracking/' + sample
 
-        print("URL: %s" % url)
-
         resp = requests.get(url)
-
-        print("MY RESPONSE: " + resp.text)
-        print("MY headers: " + resp.headers)
 
         return resp

@@ -32,12 +32,12 @@ class DataformerClient(object):
             type : str
                 The converted type, valid values are: 'mzml' or 'mzxml'
         """
-        print(' convert %s to %s' % (filepath, type))
+        print('convert %s to %s' % (filepath, type))
 
         try:
             if (self.__private_upload(filepath)):
                 d = self.__private_download(filepath, type)
-                print('downloaded %s' % d)
+                print('\tdownloaded %s' % d)
                 return d
             else:
                 return ''
@@ -53,7 +53,7 @@ class DataformerClient(object):
             filepath : str
                 The raw data file to be uploaded and converted (the conversion happens automatically)
         """
-        print('...upoloading %s' % filepath)
+        print('upoloading %s' % filepath)
 
         url = f'{self.dataformer_url}/rest/conversion/upload'
 
