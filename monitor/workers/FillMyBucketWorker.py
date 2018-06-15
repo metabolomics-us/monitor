@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import os
 from threading import Thread
 
 from monitor.Bucket import Bucket
@@ -31,6 +32,7 @@ class FillMyBucketWorker(Thread):
                 print("aws_worker looking for something to do...\n")
                 item = self.upload_q.get()
 
+                print("sending %s bytes to aws" % os.path.getsize(item))
                 if (self.bucket.save(item)):
                     print("\tfile %s saved to %s" % (item, self.bucket.bucket_name))
 
@@ -42,7 +44,6 @@ class FillMyBucketWorker(Thread):
             except Exception as ex:
                 print("Error uploading sample %s: %s" % (item, str(ex)))
                 self.upload_q.task_done()
-                pass
 
     def exists(self, filename):
         return self.bucket.exists(filename)

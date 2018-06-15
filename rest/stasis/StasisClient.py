@@ -39,18 +39,13 @@ class StasisClient(object):
 
         url = self.stasis_url + "/stasis/tracking"
         filename, ext = os.path.splitext(sample.split(os.sep)[-1])
-        print("cleaned filename: %s" % filename)
+
         payload = json.dumps({"sample":filename, "status":status, "fileHandle":(filename + ext)})
 
-        print("\tsetting tracking for sample %s to %s" % (filename, status))
-
-        print("request data:\n\turl: %s\n\tdata: %s" % (url, payload))
         headers = {"Content-Type": "application/json"}
         resp = requests.post(url, data=payload, headers=headers)
 
-        if(resp.status_code == 200):
-            print("\tsuccess")
-        else:
+        if (resp.status_code != 200):
             print("\tfail\n%d - %s" % (resp.status_code, resp.reason))
 
         return resp.status_code == 200

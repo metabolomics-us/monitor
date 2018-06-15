@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import argparse
+from queue import Queue
 
 import yamlconf
 
@@ -18,7 +19,11 @@ def start_watching(config):
         config['monitor']['storage']
     )
 
-    monitor = Monitor(config, stasis_cli, dataform_cli)
+    agi_q = Queue()
+    conv_q = Queue()
+    aws_q = Queue()
+
+    monitor = Monitor(config, stasis_cli, dataform_cli, agi_q, conv_q, aws_q)
 
     try:
         monitor.start()

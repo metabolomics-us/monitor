@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import time
-from queue import Queue
+from threading import Thread
 
 from watchdog.observers import Observer
 
@@ -12,7 +12,7 @@ from monitor.workers.ConversionWorker import ConversionWorker
 from monitor.workers.FillMyBucketWorker import FillMyBucketWorker
 
 
-class Monitor(object):
+class Monitor(Thread):
     """A file monitoring class
 
     Parameters
@@ -25,24 +25,24 @@ class Monitor(object):
             A client class to the DataFormer rest API
     """
 
-    def __init__(self, config, stasis_cli, dataform_cli):
+    def __init__(self, config, stasis_cli, dataform_cli, agi_q, conv_q, aws_q):
         super().__init__()
         self.config = config
         self.stasis_cli = stasis_cli
         self.dataform_cli = dataform_cli
         self.running = True
+        self.zipping_q = agi_q
+        self.conversion_q = conv_q
+        self.upload_q = aws_q
 
     def start(self):
         """Starts the monitoring of the selected folders"""
-        zipping_q = Queue()
-        conversion_q = Queue()
-        upload_q = Queue()
 
         # Setup the zipping worker
         agilent_worker = AgilentWorker(
             self.stasis_cli,
-            zipping_q,
-            conversion_q,
+            self.zipping_q,
+            self.conversion_q,
             self.config['monitor']['storage'])
         agilent_worker.daemon = True
 
@@ -50,14 +50,14 @@ class Monitor(object):
         conversion_worker = ConversionWorker(
             self.stasis_cli,
             self.dataform_cli,
-            conversion_q,
-            upload_q,
+            self.conversion_q,
+            self.upload_q,
             self.config['monitor']['storage']
         )
         conversion_worker.daemon = True
 
         # Setup the aws uploader worker
-        aws_worker = FillMyBucketWorker(self.config['aws']['bucketName'], upload_q)
+        aws_worker = FillMyBucketWorker(self.config['aws']['bucketName'], self.upload_q)
         aws_worker.daemon = True
 
         threads = [agilent_worker, conversion_worker, aws_worker]
@@ -68,9 +68,9 @@ class Monitor(object):
 
         event_handler = NewFileScanner(
             self.stasis_cli,
-            zipping_q,
-            conversion_q,
-            upload_q,
+            self.zipping_q,
+            self.conversion_q,
+            self.upload_q,
             self.config['monitor']['extensions']
         )
 
@@ -89,6 +89,3 @@ class Monitor(object):
             observer.stop()
 
         observer.join()
-
-        for t in threads:
-            t.join()

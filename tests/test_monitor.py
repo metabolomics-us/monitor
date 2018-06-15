@@ -1,11 +1,13 @@
 import os
 import shutil
 import time
-from multiprocessing import Process
 from os import path
+from queue import Queue
+from threading import Thread
 
 import yamlconf
 
+from monitor.Bucket import Bucket
 from monitor.Monitor import Monitor
 from rest.dataformer.DataformerClient import DataformerClient
 from rest.stasis.StasisClient import StasisClient
@@ -18,10 +20,10 @@ class TestMonitorApp(object):
             cls.config = yamlconf.load(conf)
 
     def create_file_delayed(self, raw_filename, tmpdir, delay, count):
-        print("\tfile creator sleeping for %d seconds..." % delay)
-        time.sleep(delay)
-        print("\twake up lazy thread!!!")
-
+        # print("\tfile creator sleeping for %d seconds..." % delay)
+        # time.sleep(delay)
+        # print("\twake up lazy thread!!!")
+        #
         for c in range(count):
             raw_fname, raw_ext = path.splitext(raw_filename)
             destination = path.join(tmpdir, "extra", "path", "%s-%d%s" % (raw_fname.split(os.sep)[-1], c, raw_ext))
@@ -40,16 +42,20 @@ class TestMonitorApp(object):
                                   self.config['dataform']['port'],
                                   self.config['monitor']['storage'])
 
-        filemon = Monitor(self.config, st_cli, df_cli)
+        agi_q = Queue()
+        conv_q = Queue()
+        aws_q = Queue()
 
-        delay = 3
+        filemon = Monitor(self.config, st_cli, df_cli, agi_q, conv_q, aws_q)
+
+        delay = 5
         count = 2
 
-        mon_thread = Process(target=filemon.start)
-        # mon_thread.daemon = True # not allowed to have children
+        mon_thread = Thread(target=filemon.start)
+        mon_thread.daemon = True  # not allowed to have children
 
         raw_filename = path.join("..", "resources", "monitored.d")
-        file_thread = Process(target=self.create_file_delayed, args=(raw_filename, tmpdir, delay, count))
+        file_thread = Thread(target=self.create_file_delayed, args=(raw_filename, tmpdir, delay, count))
 
         print("about to start monitor")
         mon_thread.start()
@@ -60,11 +66,13 @@ class TestMonitorApp(object):
         file_thread.join()
         print("file creator joined")
 
-        mon_thread.join(timeout=delay*count)
-        print("monitor joined")
-        mon_thread.terminate()
+        agi_q.join()
+        conv_q.join()
+        aws_q.join()
 
+        bucket = Bucket(bucket_name='data-carrot')
         raw_fname, raw_ext = path.splitext(raw_filename.split(os.sep)[-1])
-
         conv_file = path.join(tmpdir, "%s-0%s" % (raw_fname, ".mzml"))
-        assert path.exists(conv_file)
+
+        while not bucket.exists(conv_file):
+            time.sleep(2)

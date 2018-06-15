@@ -42,7 +42,7 @@ class NewFileScanner(FileSystemEventHandler):
 
         if (event.is_directory):
             # if it's a .d folder
-            if (event.src_path.endswith('.d')):
+            if (event.src_path.lower().endswith('.d')):
                 print("event %s" % event)
                 # 3. add to zipping queue
                 self.zipping_q.put(event.src_path)

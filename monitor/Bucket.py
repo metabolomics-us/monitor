@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import os
 
 import boto3
@@ -11,7 +14,7 @@ class Bucket:
 
     def __init__(self, bucket_name):
 
-        print(bucket_name)
+        print("Created bucket object pointing at: %s" % bucket_name)
         self.bucket_name = bucket_name
         self.s3 = boto3.resource('s3')
 
@@ -23,11 +26,21 @@ class Bucket:
 
     def save(self, filename):
         """
-        stores the specified file in the bucket
+            stores the specified file in the bucket
         :param filename: the name of the file to be uploaded
         :return:
         """
-        return self.s3.Bucket(self.bucket_name).put_object(Key=filename.split(os.sep)[-1], Body=filename)
+
+        try:
+            # from https://boto3.readthedocs.io/en/latest/reference/services/s3.html#S3.Object.upload_file
+            self.s3.Object(self.bucket_name, filename.split(os.sep)[-1]).upload_file(filename)
+            return filename.split(os.sep)[-1]
+        except ConnectionResetError as cre:
+            print("ERROR-cre: %s uploading %s" % (cre.strerror, cre.filename))
+            raise
+        except Exception as e:
+            print("ERROR-e: %s - file: %s" % (str(e), filename))
+            raise
 
     def load(self, name):
         """
