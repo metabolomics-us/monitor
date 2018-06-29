@@ -19,7 +19,7 @@ class NewFileScanner(FileSystemEventHandler):
         conversion_q: Queue
             Queue of raw data files to be converted to mzml
         extensions: array
-            An array of valid file extensions (['.d','.raw'])
+            An array of valid file extensions (['.d', '.D','.raw'])
     """
 
     def __init__(self, st_cli, zipping_q, conversion_q, upload_q, extensions):
@@ -37,34 +37,50 @@ class NewFileScanner(FileSystemEventHandler):
             event : DirCreatedEvent or FileCreatedEvent
                 Event representing file/directory creation.
         """
+        self.__process_event(event.src_path, event.is_directory, event.event_type)
 
-        file = str(event.src_path)
+    def on_moved(self, event):
+        """Called when a file or directory is mopved or renamed.
 
-        if (event.is_directory):
-            # if it's a .d folder
-            if (event.src_path.lower().endswith('.d')):
-                print("event %s" % event)
+        Parameters
+        ----------
+            event : DirCreatedEvent or FileCreatedEvent
+                Event representing file/directory creation.
+        """
+        self.__process_event(event.dest_path, event.is_directory, event.event_type)
+
+    def __process_event(self, path, is_directory, evt_type):
+        """Does the actual processing of new and modified files (and agilent folders)
+
+        Parameters
+        ----------
+            event : DirCreatedEvent or FileCreatedEvent
+                Event representing file/directory creation.
+        """
+        if is_directory:
+            # if it's a .d/.D folder
+            if path.lower().endswith('.d'):
+                print('Processing %s for path: %s' % (evt_type, path))
                 # 3. add to zipping queue
-                self.zipping_q.put(event.src_path)
+                self.zipping_q.put(path)
                 # 3.5 trigger status acquired
-                self.stasis_cli.set_tracking(file, "acquired")
+                self.stasis_cli.set_tracking(path, "acquired")
         else:
             # if it's a regular file
-            fileName, fileExtension = os.path.splitext(file)
+            fileName, fileExtension = os.path.splitext(path)
 
-            if (fileExtension.lower() in self.extensions and not '.mzml'):
-                print("event %s" % event)
+            if fileExtension.lower() in self.extensions and not '.mzml':
+                print('Processing %s for path: %s' % (evt_type, path))
                 # 2. wait till the size stays constant
                 size = 0
-                while (size < os.stat(file).st_size):
+                while (size < os.stat(path).st_size):
                     time.sleep(1)
-                    size = os.stat(str(file)).st_size
-                    print(size)
+                    size = os.stat(path).st_size
 
                 # 3. trigger status acquired
-                self.stasis_cli.set_tracking(file, "acquired")
+                self.stasis_cli.set_tracking(path, "acquired")
                 # 3.5 add to conversion queue
-                self.conversion_q.put(file)
-            elif (fileExtension.lower() == '.mzml'):
-                print("event %s" % event)
-                self.upload_q.put(file)
+                self.conversion_q.put(path)
+            elif fileExtension.lower() == '.mzml':
+                print('Processing %s for path: %s' % (evt_type, path))
+                self.upload_q.put(path)

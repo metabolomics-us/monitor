@@ -35,12 +35,13 @@ class AgilentWorker(Thread):
         running = True
         while running:
             item = self.zipping_q.get()
+
             try:
                 print("agilent_worker looking for something to do...\n")
                 zipsize = 0
-                while (os.stat(item).st_size > zipsize):
+                while (sum(os.path.getsize(f) for f in os.listdir(item) if os.path.isfile(f)) > zipsize):
                     time.sleep(1)
-                    zipsize = os.stat(item).st_size
+                    zipsize = sum(os.path.getsize(f) for f in os.listdir(item) if os.path.isfile(f))
 
                 # 4. zip file
                 self.__compress(item)
@@ -66,8 +67,7 @@ class AgilentWorker(Thread):
                 The folder to be compressed
         """
         filename = folder.split(os.sep)[-1]
-        print('filename: %s' % filename)
-        print('compressing folder %s to %s/%s.zip' % (folder, self.storage, filename))
+        print('compressing folder %s to %s%s%s.zip' % (folder, self.storage, os.sep, filename))
 
         zf = os.path.join(self.storage, filename + '.zip')
         zipped = zipfile.ZipFile(zf, 'w', zipfile.ZIP_DEFLATED)
@@ -91,3 +91,11 @@ class AgilentWorker(Thread):
 
         # 4.5 Add to conversion queue
         self.conversion_q.put(zipped.filename)
+
+    def __get_size(self, start_path):
+        total_size = 0
+        for dirpath, dirnames, filenames in os.scandir(start_path):
+            for f in filenames:
+                fp = os.path.join(dirpath, f)
+                total_size += os.path.getsize(fp)
+        return total_size
