@@ -4,7 +4,7 @@
 import os
 
 import boto3
-import botocore
+from botocore.exceptions import ClientError
 
 
 class Bucket:
@@ -14,7 +14,7 @@ class Bucket:
 
     def __init__(self, bucket_name):
 
-        print("Created bucket object pointing at: %s" % bucket_name)
+        print('[Bucket] - Created bucket object pointing at: %s' % bucket_name)
         self.bucket_name = bucket_name
         self.s3 = boto3.resource('s3')
 
@@ -22,7 +22,7 @@ class Bucket:
             boto3.client('s3').create_bucket(Bucket=bucket_name, CreateBucketConfiguration={
                 'LocationConstraint': 'us-west-2'})
         except Exception as e:
-            print("sorry this bucket caused an error - this mean it exist, no reason to worry")
+            print('[Bucket] - bucket exists, no reason to worry')
 
     def save(self, filename):
         """
@@ -36,11 +36,11 @@ class Bucket:
             self.s3.Object(self.bucket_name, filename.split(os.sep)[-1]).upload_file(filename)
             return filename.split(os.sep)[-1]
         except ConnectionResetError as cre:
-            print("ERROR-cre: %s uploading %s" % (cre.strerror, cre.filename))
-            raise
+            print('[Bucket] - ERROR-cre: %s uploading %s' % (cre.strerror, cre.filename))
+            # raise
         except Exception as e:
-            print("ERROR-e: %s - file: %s" % (str(e), filename))
-            raise
+            print('[Bucket] - ERROR-e: %s - file: %s' % (str(e), filename))
+            # raise
 
     def load(self, name):
         """
@@ -49,15 +49,16 @@ class Bucket:
         :return:
         """
         try:
-            print("loading: {}".format(name))
+            print('[Bucket] - loading: %s' % name)
             data = self.s3.Object(self.bucket_name).get()['Body']
 
             return data.read().decode()
-        except Exception as e:
+        except ClientError as e:
             if e.response['Error']['Code'] == "404":
-                print("The object does not exist.")
+                print('[Bucket] - The object does not exist.')
             else:
-                raise
+                print(str(e))
+                # raise
 
     def exists(self, name) -> bool:
         """
@@ -68,13 +69,16 @@ class Bucket:
 
         try:
             self.s3.Object(self.bucket_name, name).load()
-        except botocore.exceptions.ClientError as e:
+        except ClientError as e:
             if e.response['Error']['Code'] == "404":
                 # The object does not exist.
                 return False
-            else:
-                # Something else has gone wrong.
-                raise
+            # else:
+            #     # Something else has gone wrong.
+            #     print("EXCEPTION:" + str(e))
+            #     raise
+        except Exception as other:
+            print('[Bucket] - other exception: ' + str(other))
         else:
             return True
 

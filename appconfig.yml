@@ -1,6 +1,6 @@
 monitor:
   paths:
-    - "/home/diego/.carrot_storage/deconvolution"
+    - "c:\\users\\diego\\.carrot_storage\\raw"
 
   extensions:
     - ".d"
@@ -10,20 +10,16 @@ monitor:
     - ".wiff"
     - ".cdf"
     - ".peg"
-    - ".txt"
 
 # to be added - we don't have any converter for these files yet
 #    - ".smp"
 
-  storage: "/home/diego/.carrot_storage/tmp"
+  storage: "c:\\users\\diego\\.carrot_storage\\tmp"
+  msconvert: "h:\\proteowizard\\msconvert.exe"
 
 stasis:
   url: "https://test-api.metabolomics.us"
   port: "80"
-
-dataform:
-  url: "http://luna.fiehnlab.ucdavis.edu"
-  port: "9090"
 
 aws:
   bucketName: "data-carrot"

@@ -17,32 +17,32 @@ class FillMyBucketWorker(Thread):
             A queue that contains the filenames to be uploaded
     """
 
-    def __init__(self, bucket_name, up_q, name='aws_worker'):
-        super().__init__(name=name)
+    def __init__(self, bucket_name, up_q, name='aws_worker', daemon=True):
+        super().__init__(name=name, daemon=daemon)
         self.bucket = Bucket(bucket_name)
         self.upload_q = up_q
+        self.running = True
 
     def run(self):
         """Starts the AWS bucket filler Worker"""
-        running = True
         item = None
 
-        while running:
+        while self.running:
             try:
-                print("aws_worker looking for something to do...\n")
+                print("[BucketWorker] - looking for something to do...")
                 item = self.upload_q.get()
 
-                print("sending %s bytes to aws" % os.path.getsize(item))
+                print("[BucketWorker] - sending (%s) %s bytes to aws" % (item, os.path.getsize(item)))
                 if (self.bucket.save(item)):
-                    print("\tfile %s saved to %s" % (item, self.bucket.bucket_name))
+                    print("[BucketWorker] - file %s saved to %s" % (item, self.bucket.bucket_name))
 
                 self.upload_q.task_done()
             except KeyboardInterrupt:
-                print("stopping aws_worker")
+                print("[BucketWorker] - stopping aws_worker")
                 self.upload_q.join()
-                running = False
+                self.running = False
             except Exception as ex:
-                print("Error uploading sample %s: %s" % (item, str(ex)))
+                print("[BucketWorker] - Error uploading sample %s: %s" % (item, str(ex)))
                 self.upload_q.task_done()
 
     def exists(self, filename):

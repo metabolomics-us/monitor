@@ -7,23 +7,16 @@ from queue import Queue
 import yamlconf
 
 from monitor.Monitor import Monitor
-from rest.dataformer.DataformerClient import DataformerClient
 from rest.stasis.StasisClient import StasisClient
 
 
 def start_watching(config):
     stasis_cli = StasisClient(config['stasis']['url'])
-    dataform_cli = DataformerClient(
-        config['dataform']['url'],
-        config['dataform']['port'],
-        config['monitor']['storage']
-    )
 
-    agi_q = Queue()
     conv_q = Queue()
     aws_q = Queue()
 
-    monitor = Monitor(config, stasis_cli, dataform_cli, agi_q, conv_q, aws_q)
+    monitor = Monitor(config, stasis_cli, conv_q, aws_q)
 
     try:
         monitor.start()
