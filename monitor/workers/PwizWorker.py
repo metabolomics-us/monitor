@@ -60,6 +60,7 @@ class PwizWorker(Thread):
 
                 if result.returncode == 0:
                     resout = result.stdout.decode('ascii').split('writing output file: ')[-1].strip()
+                    result.stdout.close()
                     # update tracking status and upload to aws
                     print('[PwizWorker] - added %s to upload queue' % resout.split(os.sep)[-1])
                     self.stasis_cli.set_tracking(file_basename, 'converted')
