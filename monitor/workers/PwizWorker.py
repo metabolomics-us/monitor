@@ -44,7 +44,7 @@ class PwizWorker(Thread):
         item = None
         while self.running:
             try:
-                print('[PwizWorker] - pwiz_worker looking for something to do...')
+                print('[PwizWorker] - waiting for file to convert...')
                 item = self.conversion_q.get()
 
                 file_basename = str(item.split(os.sep)[-1]).split('.')[0]

@@ -24,8 +24,8 @@ class Monitor(Thread):
             A client class to the DataFormer rest API
     """
 
-    def __init__(self, config, stasis_cli, conv_q, aws_q):
-        super().__init__()
+    def __init__(self, config, stasis_cli, conv_q, aws_q, daemon=False):
+        super().__init__(name='Monitor', daemon=daemon)
         self.config = config
         self.stasis_cli = stasis_cli
         self.conversion_q = conv_q
@@ -44,8 +44,7 @@ class Monitor(Thread):
             self.upload_q,
             self.config['monitor']['storage'],
             self.config['monitor']['msconvert'],
-            name='conversion_worker_%d' % x,
-            daemon=True
+            name='conversion_worker_%d' % x
         ) for x in range(0, 5)
         ]
 
