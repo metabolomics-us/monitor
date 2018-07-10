@@ -44,7 +44,7 @@ class PwizWorker(Thread):
         item = None
         while self.running:
             try:
-                if self.upload_q.empty():
+                if self.conversion_q.empty():
                     print('[PwizWorker] - nothing to do, waiting for file to convert...')
 
                 item = self.conversion_q.get()
@@ -61,7 +61,7 @@ class PwizWorker(Thread):
                 if result.returncode == 0:
                     resout = result.stdout.decode('ascii').split('writing output file: ')[-1].strip()
                     # update tracking status and upload to aws
-                    print('[PwizWorker] - added %s to upload queue' % resout.split(os.sep)[-1])
+                    print('[PwizWorker] - added %s to upload queue' % resout)
                     self.stasis_cli.set_tracking(file_basename, 'converted')
                     self.upload_q.put(resout)
                 else:

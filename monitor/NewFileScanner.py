@@ -76,6 +76,11 @@ class NewFileScanner(FileSystemEventHandler):
             self.conversion_q.put(fpath)
         elif fileExtension.lower() == '.mzml':
             print('[NewFileScanner] - Processing %s event for path: %s' % (evt_type, fpath))
+            size = 0
+            while size < os.stat(fpath).st_size:
+                time.sleep(1)
+                size = os.stat(fpath).st_size
+
             self.stasis_cli.set_tracking(fpath, "entered")
             self.stasis_cli.set_tracking(fpath, "acquired")
             self.stasis_cli.set_tracking(fpath, "converted")
