@@ -33,6 +33,7 @@ class Bucket:
 
         try:
             # from https://boto3.readthedocs.io/en/latest/reference/services/s3.html#S3.Object.upload_file
+            print('[Bucket] - Saving file %s on %s' % (filename, self.bucket_name))
             self.s3.Object(self.bucket_name, filename.split(os.sep)[-1]).upload_file(filename)
             return filename.split(os.sep)[-1]
         except ConnectionResetError as cre:
