@@ -29,7 +29,9 @@ class FillMyBucketWorker(Thread):
 
         while self.running:
             try:
-                print("[BucketWorker] - waiting for file to upload...")
+                if self.upload_q.empty():
+                    print("[BucketWorker] - nothing to do, waiting for file to upload...")
+
                 item = self.upload_q.get()
 
                 print("[BucketWorker] - sending (%s) %s bytes to aws" % (item, os.path.getsize(item)))
