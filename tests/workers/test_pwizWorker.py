@@ -1,4 +1,5 @@
 import os
+import shutil
 import unittest
 from queue import Queue
 
@@ -9,20 +10,22 @@ from monitor.workers.PwizWorker import PwizWorker
 
 
 class TestPwizWorker(unittest.TestCase):
+    config = None
     agi_file = os.path.join(os.path.dirname(__file__),
                             '..', '..', 'resources', 'monitored.d')
 
-    # setup
     @classmethod
     def setUpClass(cls):
         with open(os.path.join(os.path.dirname(__file__), '..', '..',
                                'appconfig.yml'), 'r') as conf:
             cls.config = yamlconf.load(conf)
 
-    # cleanup
-    def tearDown(self):
-        filename = str(self.agi_file.split(os.sep)[-1]).split('.')[0]
-        os.remove(os.path.join(self.config['monitor']['storage'], '%s.mzml' % filename))
+    @classmethod
+    def tearDownClass(cls):
+        filename = str(cls.agi_file.split(os.sep)[-1]).split('.')[0]
+        test_file = os.path.join(cls.config['monitor']['storage'], '%s.mzml' % filename)
+        if (os.path.exists(test_file)):
+            shutil.rmtree(os.path.join(os.path.dirname(__file__), 'tmp'))
 
     def test_pwizWorker(self):
         st_cli = MagicMock(name='stasis_cli_mock')
@@ -51,5 +54,6 @@ class TestPwizWorker(unittest.TestCase):
         cnv_q.join()
 
         filename = str(self.agi_file.split(os.sep)[-1]).split('.')[0]
-        assert os.path.exists(os.path.join(self.config['monitor']['storage'], '%s.mzml' % filename))
+        test_file = os.path.join(os.path.dirname(__file__), 'tmp', '%s.mzml' % filename)
+        assert os.path.exists(test_file)
         assert 1 == aws_q.qsize()

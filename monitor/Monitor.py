@@ -36,7 +36,8 @@ class Monitor(Thread):
         """Starts the monitoring of the selected folders"""
 
         # Setup the aws uploader worker
-        aws_worker = FillMyBucketWorker(self.config['aws']['bucketName'], self.upload_q)
+        aws_worker = FillMyBucketWorker(self.stasis_cli, self.config['aws']['bucketName'], self.upload_q,
+                                        self.config['monitor']['storage'])
 
         threads = [aws_worker] + [PwizWorker(
             self.stasis_cli,

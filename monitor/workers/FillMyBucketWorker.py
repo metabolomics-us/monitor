@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import os
+import shutil
 from threading import Thread
 
 from monitor.Bucket import Bucket
@@ -17,11 +18,13 @@ class FillMyBucketWorker(Thread):
             A queue that contains the filenames to be uploaded
     """
 
-    def __init__(self, bucket_name, up_q, name='aws_worker', daemon=True):
+    def __init__(self, stasis, bucket_name, up_q, storage, name='aws_worker', daemon=True):
         super().__init__(name=name, daemon=daemon)
         self.bucket = Bucket(bucket_name)
         self.upload_q = up_q
         self.running = True
+        self.stasis_cli = stasis
+        self.storage = storage
 
     def run(self):
         """Starts the AWS bucket filler Worker"""
@@ -35,16 +38,22 @@ class FillMyBucketWorker(Thread):
                 item = self.upload_q.get()
 
                 print("[BucketWorker] - sending (%s) %s bytes to aws" % (item, os.path.getsize(item)))
+                base_file, extension = os.path.splitext(item.split(os.sep)[-1])
+
                 if (self.bucket.save(item)):
                     print("[BucketWorker] - file %s saved to %s" % (item, self.bucket.bucket_name))
+                else:
+                    self.stasis_cli.set_tracking(base_file, 'failed')
 
                 self.upload_q.task_done()
+                shutil.move(item, os.path.join(self.storage, base_file + extension))
             except KeyboardInterrupt:
                 print("[BucketWorker] - stopping aws_worker")
                 self.upload_q.join()
                 self.running = False
             except Exception as ex:
                 print("[BucketWorker] - Error uploading sample %s: %s" % (item, str(ex)))
+                self.stasis_cli.set_tracking(str(item.split(os.sep)[-1]).split('.')[0], 'failed')
                 self.upload_q.task_done()
 
     def exists(self, filename):

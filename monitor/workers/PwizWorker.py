@@ -36,7 +36,7 @@ class PwizWorker(Thread):
         self.args = ['--mzML', '-e', '.mzml', '--zlib',
                      '--filter', '"peakPicking true 1-"',
                      '--filter', '"zeroSamples removeExtra"',
-                     '-o', self.storage]
+                     '-o', os.path.join('.', 'tmp')]
 
     def run(self):
         """Starts the processing of elements in the conversion queue"""
@@ -53,7 +53,7 @@ class PwizWorker(Thread):
 
                 dir_size = 0
                 while os.stat(item).st_size > dir_size:
-                    time.sleep(1.5)
+                    time.sleep(1.75)
                     dir_size = os.stat(item).st_size
 
                 result = subprocess.run([self.runner, item] + self.args, stdout=subprocess.PIPE, check=True)
@@ -78,6 +78,7 @@ class PwizWorker(Thread):
                        'stdout': cpe.stdout,
                        'stderr': cpe.stderr})
                 print('[PwizWorker] - skipping conversion of sample %s' % str(item))
+                self.stasis_cli.set_tracking(str(item.split(os.sep)[-1]).split('.')[0], 'failed')
                 self.conversion_q.task_done()
             except KeyboardInterrupt:
                 print('[PwizWorker] - stopping conversion_worker')
@@ -85,4 +86,5 @@ class PwizWorker(Thread):
                 self.running = False
             except Exception as ex:
                 print('[PwizWorker] - skipping conversion of sample %s -- Error: %s' % (str(item), str(ex)))
+                self.stasis_cli.set_tracking(str(item.split(os.sep)[-1]).split('.')[0], 'failed')
                 self.conversion_q.task_done()
