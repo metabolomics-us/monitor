@@ -45,6 +45,12 @@ class FillMyBucketWorker(Thread):
                 else:
                     self.stasis_cli.set_tracking(base_file, 'failed')
 
+                base_file, extension = os.path.splitext(item.split(os.sep)[-1])
+                dest = os.path.join(self.storage, base_file + extension)
+                print('[BucketWorker] - destination exists: %s' % os.path.exists(dest))
+                print('[BucketWorker] - Moving %s to perm storage %s' % (item, dest))
+                shutil.move(item, os.path.join(self.storage, base_file + extension))
+
                 self.upload_q.task_done()
             except KeyboardInterrupt:
                 print("[BucketWorker] - stopping aws_worker")
@@ -54,12 +60,6 @@ class FillMyBucketWorker(Thread):
                 print("[BucketWorker] - Error uploading sample %s: %s" % (item, str(ex)))
                 self.stasis_cli.set_tracking(str(item.split(os.sep)[-1]).split('.')[0], 'failed')
                 self.upload_q.task_done()
-            finally:
-                base_file, extension = os.path.splitext(item.split(os.sep)[-1])
-                dest = os.path.join(self.storage, base_file + extension)
-                print('[BucketWorker] - destination exists: %s' % os.path.exists(dest))
-                print('[BucketWorker] - Moving %s to perm storage %s' % (item, dest))
-                shutil.move(item, os.path.join(self.storage, base_file + extension))
 
     def exists(self, filename):
         return self.bucket.exists(filename)
