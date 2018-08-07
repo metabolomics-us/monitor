@@ -53,7 +53,7 @@ class PwizWorker(Thread):
 
                 dir_size = 0
                 while os.stat(item).st_size > dir_size:
-                    time.sleep(1.75)
+                    time.sleep(3)
                     dir_size = os.stat(item).st_size
 
                 result = subprocess.run([self.runner, item] + self.args, stdout=subprocess.PIPE, check=True)

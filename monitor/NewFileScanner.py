@@ -64,10 +64,10 @@ class NewFileScanner(FileSystemEventHandler):
         if fileExtension.lower() in self.extensions and fileExtension.lower() != '.mzml':
             print('[NewFileScanner] - Processing "%s" event for path: %s' % (evt_type, fpath))
             # 2. wait till the size stays constant
-            size = 0
-            while size < os.stat(fpath).st_size:
-                time.sleep(1)
-                size = os.stat(fpath).st_size
+            #size = 0
+            #while size < os.stat(fpath).st_size:
+            #    time.sleep(5)
+            #    size = os.stat(fpath).st_size
 
             # 3. trigger status acquired
             self.stasis_cli.set_tracking(fpath, "acquired")
@@ -78,7 +78,7 @@ class NewFileScanner(FileSystemEventHandler):
             print('[NewFileScanner] - Processing %s event for path: %s' % (evt_type, fpath))
             size = 0
             while size < os.stat(fpath).st_size:
-                time.sleep(1)
+                time.sleep(3)
                 size = os.stat(fpath).st_size
 
             self.stasis_cli.set_tracking(fpath, "entered")
