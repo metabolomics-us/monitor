@@ -3,6 +3,10 @@ __pycache__
 *.pyo
 .pytest_cache
 
-.idea
+.idea/
+*.egg-info/
+build/
+dist/
+tmp/
 
 monitor_out.txt
