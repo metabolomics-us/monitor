@@ -8,5 +8,6 @@ __pycache__
 build/
 dist/
 tmp/
+venv/
 
 monitor_out.txt
