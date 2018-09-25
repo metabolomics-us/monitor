@@ -74,7 +74,7 @@ class PwizWorker(Thread):
                     if not self.test:
                         self.stasis_cli.set_tracking(file_basename, 'failed')
 
-                self.conversion_q.task_done()
+                # self.conversion_q.task_done()
 
             except subprocess.CalledProcessError as cpe:
                 print('[PwizWorker] - %s' % {'command': cpe.cmd,
