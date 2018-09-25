@@ -4,7 +4,7 @@
 import os
 import time
 
-from watchdog.events import FileSystemEventHandler
+from watchdog.events import FileSystemEventHandler, FileSystemEvent
 
 
 class NewFileScanner(FileSystemEventHandler):
@@ -19,14 +19,17 @@ class NewFileScanner(FileSystemEventHandler):
         conversion_q: Queue
             Queue of raw data files to be converted to mzml
         extensions: array
-            An array of valid file extensions (['.d', '.D','.raw'])
+            An array of valid lowercased file extensions (['.d', '.raw', '.mzml])
+        test: Boolean
+            A boolean indicating test run when True
     """
 
-    def __init__(self, st_cli, conversion_q, upload_q, extensions):
+    def __init__(self, st_cli, conversion_q, upload_q, extensions, test=False):
         self.stasis_cli = st_cli
         self.conversion_q = conversion_q
         self.upload_q = upload_q
         self.extensions = extensions
+        self.test = test
 
     def on_created(self, event):
         """Called when a file or directory is created.
@@ -36,8 +39,7 @@ class NewFileScanner(FileSystemEventHandler):
             event : DirCreatedEvent or FileCreatedEvent
                 Event representing file/directory creation.
         """
-        if 'acqdata' not in event.src_path.lower():
-            self.__process_event(event.src_path, event.is_directory, event.event_type)
+        self.__process_event(event)
 
     def on_moved(self, event):
         """Called when a file or directory is moved or renamed.
@@ -47,10 +49,19 @@ class NewFileScanner(FileSystemEventHandler):
             event : DirCreatedEvent or FileCreatedEvent
                 Event representing file/directory creation.
         """
-        if 'acqdata' not in event.src_path.lower():
-            self.__process_event(event.dest_path, event.is_directory, event.event_type)
+        self.__process_event(event)
 
-    def __process_event(self, fpath, is_directory, evt_type):
+    def on_deleted(self, event):
+        """Called when a file or directory is deleted.
+
+        Parameters
+        ----------
+            event : FileSystemEvent
+                Event representing file/directory deletion.
+        """
+        print("DELETED: ", event.key)
+
+    def __process_event(self, event: FileSystemEvent):
         """Does the actual processing of new and modified files (and agilent folders)
 
         Parameters
@@ -59,30 +70,40 @@ class NewFileScanner(FileSystemEventHandler):
                 Event representing file/directory creation.
         """
 
-        fileName, fileExtension = os.path.splitext(fpath)
+        evt_type, evt_path, evt_is_dir = event.key[0:3]
+        if 'moved' == evt_type:
+            evt_path = event.key[2]
+            evt_is_dir = event.key[3]
 
-        if fileExtension.lower() in self.extensions and fileExtension.lower() != '.mzml':
-            print('[NewFileScanner] - Processing "%s" event for path: %s' % (evt_type, fpath))
-            # 2. wait till the size stays constant
-            #size = 0
-            #while size < os.stat(fpath).st_size:
-            #    time.sleep(5)
-            #    size = os.stat(fpath).st_size
+        file_name, file_extension = os.path.splitext(evt_path)
 
-            # 3. trigger status acquired
-            self.stasis_cli.set_tracking(fpath, "acquired")
-            # 3.5 add to conversion queue
-            print('[NewFileScanner] - adding %s to conversion' % fpath)
-            self.conversion_q.put(fpath)
-        elif fileExtension.lower() == '.mzml':
-            print('[NewFileScanner] - Processing %s event for path: %s' % (evt_type, fpath))
-            size = 0
-            while size < os.stat(fpath).st_size:
-                time.sleep(3)
-                size = os.stat(fpath).st_size
+        if evt_is_dir:
+            if file_extension == '.d':
+                print('[NewFileScanner] - Processing "%s" event for path: %s' % (evt_type, evt_path))
+                # 3. trigger status acquired
+                if not self.test:
+                    print('updating stasis')
+                    self.stasis_cli.set_tracking(evt_path, "acquired")
+                # 3.5 add to conversion queue
+                print('[NewFileScanner] - adding to conversion %s' % evt_path)
+                self.conversion_q.put(evt_path)
+        else:
+            if file_extension == '.mzml':
+                print('[NewFileScanner] - Processing %s event for path: %s' % (evt_type, evt_path))
+                size = 0
+                while size < os.stat(evt_path).st_size:
+                    time.sleep(3)
+                    size = os.stat(evt_path).st_size
 
-            self.stasis_cli.set_tracking(fpath, "entered")
-            self.stasis_cli.set_tracking(fpath, "acquired")
-            self.stasis_cli.set_tracking(fpath, "converted")
-            print('[NewFileScanner] - adding %s to upload' % fpath)
-            self.upload_q.put(fpath)
+                # this should be set in aws already,
+                # maybe i can check before setting tracking info, just in case
+                # if not self.test:
+                #     print('updating stasis')
+                #     self.stasis_cli.set_tracking(evt_path, "entered")
+                #     self.stasis_cli.set_tracking(evt_path, "acquired")
+                #     self.stasis_cli.set_tracking(evt_path, "converted")
+
+                print('[NewFileScanner] - adding to upload %s' % evt_path)
+                self.upload_q.put(evt_path)
+            elif file_extension in self.extensions:
+                print(f'ERROR: event {{{evt_type}}} - don\'t know what to do with: {evt_path}')

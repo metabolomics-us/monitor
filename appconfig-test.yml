@@ -1,0 +1,20 @@
+monitor:
+  paths:
+    - "/g/tmp/data"
+
+  extensions:
+    - ".d"
+    - ".mzml"
+    - ".raw"
+    - ".wiff"
+
+  storage: "/g/tmp/mzml"
+  msconvert: "/d/tools/proteowizard/msconvert.exe"
+
+stasis:
+  url: "https://test-api.metabolomics.us"
+  port: "80"
+
+aws:
+  bucketName: "data-carrot"
+
