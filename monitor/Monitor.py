@@ -24,20 +24,21 @@ class Monitor(Thread):
             A client class to the DataFormer rest API
     """
 
-    def __init__(self, config, stasis_cli, conv_q, aws_q, daemon=False):
+    def __init__(self, config, stasis_cli, conv_q, aws_q, test=False, daemon=False):
         super().__init__(name='Monitor', daemon=daemon)
         self.config = config
         self.stasis_cli = stasis_cli
         self.conversion_q = conv_q
         self.upload_q = aws_q
         self.running = True
+        self.test = test
 
     def run(self):
         """Starts the monitoring of the selected folders"""
 
         # Setup the aws uploader worker
         aws_worker = FillMyBucketWorker(self.stasis_cli, self.config['aws']['bucketName'], self.upload_q,
-                                        self.config['monitor']['storage'])
+                                        self.config['monitor']['storage'], self.test)
 
         threads = [aws_worker] + [PwizWorker(
             self.stasis_cli,
@@ -45,6 +46,7 @@ class Monitor(Thread):
             self.upload_q,
             self.config['monitor']['storage'],
             self.config['monitor']['msconvert'],
+            self.test,
             name='conversion_worker_%d' % x
         ) for x in range(0, 5)
         ]
@@ -57,7 +59,8 @@ class Monitor(Thread):
             self.stasis_cli,
             self.conversion_q,
             self.upload_q,
-            self.config['monitor']['extensions']
+            self.config['monitor']['extensions'],
+            self.test
         )
 
         observer = Observer()
@@ -72,6 +75,7 @@ class Monitor(Thread):
             while self.running:
                 time.sleep(1)
         except KeyboardInterrupt:
+            print('[Monitor] - Monitor shutting down')
             self.running = False
             observer.stop()
         finally:

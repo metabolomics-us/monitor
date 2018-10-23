@@ -3,11 +3,9 @@
 
 import os
 import shutil
-import tempfile
 import time
 import unittest
 from os import path
-from pathlib import Path
 from queue import Queue
 from threading import Thread
 
@@ -23,11 +21,10 @@ class TestMonitorApp(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        with open(os.path.join(os.path.dirname(__file__), '..',
-                               'appconfig.yml'), 'r') as conf:
+        with open('appconfig-test.yml', 'r') as conf:
             cls.config = yamlconf.load(conf)
-            cls.tmpdir = tempfile.mkdtemp(None, 'monitor-',
-                                          os.path.join(os.path.dirname(__file__), '..'))
+            cls.tmpdir = './tmp/'
+        os.mkdir(cls.tmpdir)
 
     @classmethod
     def tearDownClass(cls):
@@ -47,7 +44,7 @@ class TestMonitorApp(unittest.TestCase):
         aws_q = Queue()
 
         self.config['monitor']['paths'] = [str(self.tmpdir)]
-        self.config['monitor']['storage'] = str('%s\\.carrot_storage\\tmp' % str(Path.home()))
+        self.config['monitor']['storage'] = './tmp/mzml'
 
         st_cli = StasisClient(self.config['stasis']['url'])
         filemon = Monitor(self.config, st_cli, conv_q, aws_q)

@@ -6,7 +6,6 @@ monitor:
   extensions:
     - ".d"
     - ".mzml"
-    - ".mzxml"
     - ".raw"
     - ".wiff"
     - ".cdf"
