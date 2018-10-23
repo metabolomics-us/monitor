@@ -59,7 +59,9 @@ class NewFileScanner(FileSystemEventHandler):
             event : FileSystemEvent
                 Event representing file/directory deletion.
         """
-        print("DELETED: ", event.key)
+        if ((event.is_directory and event.src_path[:-2] == '.d') or
+                (not event.is_directory and event.src_path[:-5] == '.mzml')):
+            print("DELETED: ", event.key)
 
     def __process_event(self, event: FileSystemEvent):
         """Does the actual processing of new and modified files (and agilent folders)
@@ -80,6 +82,12 @@ class NewFileScanner(FileSystemEventHandler):
         if evt_is_dir:
             if file_extension == '.d':
                 print('[NewFileScanner] - Processing "%s" event for path: %s' % (evt_type, evt_path))
+
+                dir_size = 0
+                while dir_size < self.get_folder_size2(evt_path):
+                    time.sleep(6)
+                    dir_size = self.get_folder_size2(evt_path)
+
                 # 3. trigger status acquired
                 if not self.test:
                     print('updating stasis')
@@ -107,3 +115,14 @@ class NewFileScanner(FileSystemEventHandler):
                 self.upload_q.put(evt_path)
             elif file_extension in self.extensions:
                 print(f'ERROR: event {{{evt_type}}} - don\'t know what to do with: {evt_path}')
+
+    def get_folder_size(self, path):
+        return os.stat(path).st_size
+
+    def get_folder_size2(self, path):
+        folder_size = 0
+        for (path, dirs, files) in os.walk(path):
+            for file in files:
+                filename = os.path.join(path, file)
+                folder_size += os.path.getsize(filename)
+        return folder_size

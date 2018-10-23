@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 import os
 import subprocess
-import time
 from os import path
 from threading import Thread
 
@@ -52,11 +51,6 @@ class PwizWorker(Thread):
                 item = self.conversion_q.get()
 
                 file_basename = str(item.split(os.sep)[-1]).split('.')[0]
-
-                dir_size = 0
-                while os.stat(item).st_size > dir_size:
-                    time.sleep(3)
-                    dir_size = os.stat(item).st_size
 
                 result = subprocess.run([self.runner, item] + self.args, stdout=subprocess.PIPE, check=True)
 
