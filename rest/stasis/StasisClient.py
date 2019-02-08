@@ -72,7 +72,6 @@ class StasisClient(object):
         """
         url = self.stasis_url + '/stasis/status'
 
-        print(self.headers)
         resp = requests.get(url, headers=self.headers)
         if resp.status_code == 200:
             return resp.json()
