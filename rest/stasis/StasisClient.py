@@ -19,18 +19,13 @@ class StasisClient(object):
 
     HTTPConnection.debugLevel = 1
     stasis_url = ""
-
-    def _api_token():
-        api_token = os.getenv('PROD_STASIS_API_TOKEN', '').strip()
-        if api_token is '':
-            raise RequestException("Missing authorization token")
-
-        return {'x-api-key': api_token}
+    headers = {}
 
     def __init__(self, api_url):
         self.stasis_url = api_url
+        self.headers['x-api-key'] = os.getenv('PROD_STASIS_API_TOKEN', '').strip()
         self.states = self.get_states()
-        self.headers = _api_token()
+        
 
     def set_tracking(self, sample, status):
         """Creates a new status or changes the status of a sample
@@ -77,8 +72,9 @@ class StasisClient(object):
         """
         url = self.stasis_url + '/stasis/status'
 
+        print(self.headers)
         resp = requests.get(url, headers=self.headers)
         if resp.status_code == 200:
             return resp.json()
         else:
-            raise Exception("Failed to load stasis tracking states")
+            raise Exception(f"Failed to load stasis tracking states ({resp.status_code} - {resp.text})")
