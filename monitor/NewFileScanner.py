@@ -97,7 +97,7 @@ class NewFileScanner(FileSystemEventHandler):
                 self.conversion_q.put(evt_path)
         else:
             if file_extension == '.mzml':
-                print('[NewFileScanner] - Processing %s event for path: %s' % (evt_type, evt_path))
+                print('[NewFileScanner] - Processing %s event for file: %s' % (evt_type, evt_path))
                 size = 0
                 while size < os.stat(evt_path).st_size:
                     time.sleep(3)
@@ -114,6 +114,21 @@ class NewFileScanner(FileSystemEventHandler):
                 print('[NewFileScanner] - adding to upload %s' % evt_path)
                 self.upload_q.put(evt_path)
             elif file_extension in self.extensions:
+                print('[NewFileScanner] - Processing "%s" event for file: %s' % (evt_type, evt_path))
+
+                dir_size = 0
+                while dir_size < self.get_folder_size2(evt_path):
+                    time.sleep(5)
+                    dir_size = self.get_folder_size2(evt_path)
+
+                # 3. trigger status acquired
+                if not self.test:
+                    print('updating stasis')
+                    self.stasis_cli.set_tracking(evt_path, "acquired")
+                # 3.5 add to conversion queue
+                print('[NewFileScanner] - adding to conversion %s' % evt_path)
+                self.conversion_q.put(evt_path)
+            elif file_extension not in self.extensions:
                 print(f'ERROR: event {{{evt_type}}} - don\'t know what to do with: {evt_path}')
 
     def get_folder_size(self, path):

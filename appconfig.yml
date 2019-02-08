@@ -5,11 +5,16 @@ monitor:
 
   extensions:
     - ".d"
-    - ".mzml"
     - ".raw"
     - ".wiff"
-    - ".cdf"
-    - ".peg"
+#    - ".mzml"
+#    - ".cdf"
+#    - ".peg"
+
+  skip:
+    - ".scan"   # chromatogram data file for wiff format
+    - ".~idx2"  # secondary file for wiff format
+
 
 # to be added - we don't have any converter for these files yet
 #    - ".smp"
