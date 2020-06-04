@@ -1,7 +1,6 @@
 monitor:
   paths:
-    - "D:\\studies\\core"
-    - "D:\\studies\\research"
+    - "D:/studies/core"
 
   extensions:
     - ".d"
@@ -19,7 +18,7 @@ monitor:
 # to be added - we don't have any converter for these files yet
 #    - ".smp"
 
-  storage: "L:\\mzml"
+  storage: "D:\\lunabckup\\mzml"
   msconvert: "D:\\tools\\proteowizard\\msconvert.exe"
 
 stasis:
