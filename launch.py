@@ -2,26 +2,16 @@
 # -*- coding: utf-8 -*-
 
 import argparse
+import sys
 from queue import Queue
 
 import yamlconf
+from loguru import logger
+from stasis_client.client import StasisClient
 
 from monitor.Monitor import Monitor
-from rest.stasis.StasisClient import StasisClient
 
-
-def start_watching(config, test):
-    stasis_cli = StasisClient(config['stasis']['url'])
-
-    conv_q = Queue()
-    aws_q = Queue()
-
-    monitor = Monitor(config, stasis_cli, conv_q, aws_q, test=test)
-
-    try:
-        monitor.start()
-    except KeyboardInterrupt:
-        print('Shutting down remaining threads')
+logger.add(sys.stdout, format="{time} {level} {message}", filter="Launcher", level="INFO")
 
 
 if __name__ == "__main__":
@@ -41,12 +31,14 @@ if __name__ == "__main__":
 
     if args.test:
         configFile = 'appconfig-test.yml'
-        print('\nRunning in TEST mode !!!\n')
+        logger.warning('\nRunning in TEST mode !!!\n')
 
     with open(configFile, 'r') as stream:
         config = yamlconf.load(stream)
 
-    try:
-        start_watching(config, args.test)
-    except Exception as ex:
-        print(ex.args)
+    stasis_cli = StasisClient(config['stasis']['url'])
+
+    conv_q = Queue()
+    aws_q = Queue()
+
+    Monitor(config, stasis_cli, conv_q, aws_q, test=args.test).run()

@@ -1,6 +1,8 @@
-requests>=2.18.4
-simplejson>=3.15.0
-yamlconf>=0.2.3
-watchdog>=0.8.3
+requests
+simplejson
+yamlconf
+watchdog
 boto3
 botocore
+loguru
+git+git://github.com/metabolomics-us/carpy.git@master#egg=stasis-client&subdirectory=stasis-client

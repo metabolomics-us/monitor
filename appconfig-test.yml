@@ -1,6 +1,6 @@
 monitor:
   paths:
-    - "/g/tmp/data"
+    - "d:/data"
 
   extensions:
     - ".d"
@@ -8,13 +8,13 @@ monitor:
     - ".raw"
     - ".wiff"
 
-  storage: "/g/tmp/mzml"
-  msconvert: "/d/tools/proteowizard/msconvert.exe"
+  storage: "d:/mzml"
+  msconvert: "c:/tools/pwiz-3.0.20109-5f47a781c/msconvert.exe"
 
 stasis:
   url: "https://test-api.metabolomics.us"
   port: "80"
 
 aws:
-  bucketName: "data-carrot"
+  bucketName: "wcmc-data-stasis-raw-test"
 

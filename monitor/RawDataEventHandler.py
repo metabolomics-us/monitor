@@ -2,20 +2,22 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
 import time
+from queue import Queue
 
+from loguru import logger
+from stasis_client.client import StasisClient
 from watchdog.events import FileSystemEventHandler, FileSystemEvent
 
 
-class NewFileScanner(FileSystemEventHandler):
-    """A custom file scanner
+class RawDataEventHandler(FileSystemEventHandler):
+    """A custom file event handler for watchdog
 
     Parameters
     ----------
         st_cli: StasisClient
             Rest client object to interact with the stasis api
-        zipping_q: Queue
-            Queue of folders to be zipped.
         conversion_q: Queue
             Queue of raw data files to be converted to mzml
         extensions: array
@@ -23,8 +25,10 @@ class NewFileScanner(FileSystemEventHandler):
         test: Boolean
             A boolean indicating test run when True
     """
+    logger.add(sys.stdout, format="{time} {level} {message}", filter="FileScanner", level="INFO")
 
-    def __init__(self, st_cli, conversion_q, upload_q, extensions, test=False):
+    def __init__(self, st_cli: StasisClient, conversion_q: Queue, upload_q: Queue, extensions, test: bool = False):
+        super().__init__()
         self.stasis_cli = st_cli
         self.conversion_q = conversion_q
         self.upload_q = upload_q
@@ -39,7 +43,8 @@ class NewFileScanner(FileSystemEventHandler):
             event : DirCreatedEvent or FileCreatedEvent
                 Event representing file/directory creation.
         """
-        self.__process_event(event)
+        logger.info(f'Got created {str(event)}')
+        self.__process_event__(event)
 
     def on_moved(self, event):
         """Called when a file or directory is moved or renamed.
@@ -49,7 +54,8 @@ class NewFileScanner(FileSystemEventHandler):
             event : DirCreatedEvent or FileCreatedEvent
                 Event representing file/directory creation.
         """
-        self.__process_event(event)
+        logger.info(f'Got moved {str(event)}')
+        self.__process_event__(event)
 
     def on_deleted(self, event):
         """Called when a file or directory is deleted.
@@ -59,11 +65,15 @@ class NewFileScanner(FileSystemEventHandler):
             event : FileSystemEvent
                 Event representing file/directory deletion.
         """
+        logger.info(f'Got deleted {str(event)}')
         if ((event.is_directory and event.src_path[:-2] == '.d') or
                 (not event.is_directory and event.src_path[:-5] == '.mzml')):
-            print("DELETED: ", event.key)
+            logger.warning("DELETED: ", event.key)
 
-    def __process_event(self, event: FileSystemEvent):
+    def on_modified(self, event):
+        logger.info(f'Got modified {str(event)}')
+
+    def __process_event__(self, event: FileSystemEvent):
         """Does the actual processing of new and modified files (and agilent folders)
 
         Parameters

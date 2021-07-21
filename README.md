@@ -10,7 +10,6 @@ We use [ProteoWizard](http://proteowizard.sourceforge.net) for the conversion, a
 - Waters .raw
 - Open formats
     - .mzML
-    - .mzXML
     
 
 ## Installation
@@ -25,12 +24,16 @@ and running:
     $ python setup.py install
 
 Python versions 3.5 and newer are supported.
+
 Tests can be run using
 
     $ python setup.py test
 
 ## Usage
-Please note this tool depends on ProteoWizard being installed on the same host
+
+Please note this tool depends on ProteoWizard being installed on the same host.
+
+Configure ProteoWizard's installation folder in appconfig.yml
  
 ### Command-line tool
 
@@ -44,10 +47,10 @@ Please use
 
     $ python bin/monitorLaunch.py -h
 
-to get a list of the available options
+to get a list of the available options.
 
 To terminate the application press: *`Ctrl+C`*
 
 ## Credits
 
-This library was written by Diego Pedrosa.
+This module was written by Diego Pedrosa.

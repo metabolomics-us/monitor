@@ -12,12 +12,15 @@ setup(name='Monitor',
       packages=['monitor', 'rest'],
       data_files=[('config', ['appconfig.yml'])],
       install_requires=[
-        'requests>=2.18.4',
-        'simplejson>=3.15.0',
-        'yamlconf>=0.2.3',
-        'watchdog>=0.8.3',
+          'requests',
+          'simplejson',
+          'yamlconf',
+          'watchdog',
           'boto3',
-          'botocore'
+          'botocore',
+          'loguru',
+          'git+git://github.com/metabolomics-us/carpy.git@master#egg=stasis-client&subdirectory=stasis-client'
+
       ],
       include_package_data=True,
       zip_safe=False,
@@ -27,4 +30,3 @@ setup(name='Monitor',
           'Intended Audience :: Science/Research',
       ]
       )
-

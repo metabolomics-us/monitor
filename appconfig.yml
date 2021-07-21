@@ -1,6 +1,7 @@
 monitor:
   paths:
     - "D:/studies/core"
+    - "D:/studies/research"
 
   extensions:
     - ".d"
@@ -18,13 +19,12 @@ monitor:
 # to be added - we don't have any converter for these files yet
 #    - ".smp"
 
-  storage: "D:\\lunabckup\\mzml"
-  msconvert: "D:\\tools\\proteowizard\\msconvert.exe"
+  storage: "D:/lunabckup/mzml/autoconv"
+  msconvert: "D:/tools/proteowizard/msconvert.exe"
 
 stasis:
   url: "https://api.metabolomics.us"
   port: "80"
 
 aws:
-  bucketName: "data-carrot"
-
+  bucketName: "wcmc-data-stasis-raw-prod"
