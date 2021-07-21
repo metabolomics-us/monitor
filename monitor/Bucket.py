@@ -2,27 +2,29 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
 
 import boto3
 from botocore.exceptions import ClientError
+from loguru import logger
 
 
 class Bucket:
-    """
-        this defines an easy access to a AWS bucket
-    """
+    """ this defines an easy access to a AWS bucket """
+
+    logger.add(sys.stdout, format="{time:YYYY-MM-DD} {level} {file} [{thread.name}]",
+               filter=f"Bucket", level="INFO")
 
     def __init__(self, bucket_name):
-
-        print('[Bucket] - Created bucket object pointing at: %s' % bucket_name)
         self.bucket_name = bucket_name
         self.s3 = boto3.resource('s3')
 
         try:
             boto3.client('s3').create_bucket(Bucket=bucket_name, CreateBucketConfiguration={
                 'LocationConstraint': 'us-west-2'})
+            logger.info(f'Created bucket: {bucket_name}')
         except Exception as e:
-            print('[Bucket] - bucket exists, no reason to worry')
+            logger.warning(f'Bucket exists, skipping creation.')
 
     def save(self, filename):
         """
@@ -33,14 +35,14 @@ class Bucket:
 
         try:
             # from https://boto3.readthedocs.io/en/latest/reference/services/s3.html#S3.Object.upload_file
-            print('[Bucket] - Saving file %s on %s' % (filename, self.bucket_name))
+            logger.info(f'Saving file {filename} on {self.bucket_name}')
             self.s3.Object(self.bucket_name, filename.split(os.sep)[-1]).upload_file(filename)
             return filename.split(os.sep)[-1]
         except ConnectionResetError as cre:
-            print('[Bucket] - ERROR-cre: %s uploading %s' % (cre.strerror, cre.filename))
+            logger.error(f'connection Reset: {cre.strerror} uploading {cre.filename}')
             # raise
         except Exception as e:
-            print('[Bucket] - ERROR-e: %s - file: %s' % (str(e), filename))
+            logger.error(f'Can\' upload file: {filename}, error: {str(e)}')
             # raise
 
     def load(self, name):
@@ -50,15 +52,15 @@ class Bucket:
         :return:
         """
         try:
-            print('[Bucket] - loading: %s' % name)
+            logger.info('[Bucket] - loading: %s' % name)
             data = self.s3.Object(self.bucket_name).get()['Body']
 
             return data.read().decode()
         except ClientError as e:
             if e.response['Error']['Code'] == "404":
-                print('[Bucket] - The object does not exist.')
+                logger.error('The object does not exist.')
             else:
-                print(str(e))
+                logger.error(str(e))
                 # raise
 
     def exists(self, name) -> bool:
@@ -76,10 +78,10 @@ class Bucket:
                 return False
             # else:
             #     # Something else has gone wrong.
-            #     print("EXCEPTION:" + str(e))
+            #     logger.info("EXCEPTION:" + str(e))
             #     raise
         except Exception as other:
-            print('[Bucket] - other exception: ' + str(other))
+            logger.info(f'Other exception: {str(other)}')
         else:
             return True
 

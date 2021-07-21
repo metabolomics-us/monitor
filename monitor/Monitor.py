@@ -15,6 +15,10 @@ from monitor.workers.PwizWorker import PwizWorker
 
 THREAD_TIMEOUT = 1
 
+logger.remove()
+fmt = "<g>{time}</g> | <level>{level}</level> | <c>{name}:{function} ({line})</c> | <m>{thread.name}</m>\n{message}"
+logger.add(sys.stderr, format=fmt, level="INFO")
+
 
 class Monitor(Thread):
     """A file monitoring class
@@ -28,7 +32,6 @@ class Monitor(Thread):
         dataform_cli: DataformerClient
             A client class to the DataFormer rest API
     """
-    logger.add(sys.stdout, format="{time} {level} {message}", filter="Monitor", level="INFO")
 
     def __init__(self, config, stasis_cli: StasisClient, conv_q: Queue, aws_q: Queue, test=False, daemon=False):
         super().__init__(name='Monitor', daemon=daemon)
@@ -47,7 +50,7 @@ class Monitor(Thread):
         try:
             # Setup the aws uploader worker
             aws_worker = FillMyBucketWorker(self.stasis_cli, self.config['aws']['bucketName'], self.upload_q,
-                                            self.config['monitor']['storage'], self.test)
+                                            self.config['monitor']['storage'], self.test, name='uploader_1')
 
             threads = [aws_worker]
             [threads.append(
@@ -58,12 +61,12 @@ class Monitor(Thread):
                     self.config['monitor']['storage'],
                     self.config['monitor']['msconvert'],
                     self.test,
-                    name='conversion_worker_%d' % x
+                    name=f'converter_{x}'
                 )
             ) for x in range(0, 5)]
 
             for t in threads:
-                logger.info('[Monitor] - starting thread %s...' % t.name)
+                logger.info(f'Starting thread {t.name}')
                 t.start()
 
             event_handler = RawDataEventHandler(
@@ -75,8 +78,9 @@ class Monitor(Thread):
             )
 
             for p in self.config['monitor']['paths']:
-                logger.info(f'Adding path {p} to observer')
+                logger.info(f'Adding path {p} to monitor')
                 observer.schedule(event_handler, p, recursive=True)
+
             observer.start()
 
             logger.info('Monitor started')
@@ -87,17 +91,17 @@ class Monitor(Thread):
         except KeyboardInterrupt:
             logger.info('Monitor shutting down')
             self.running = False
-            observer.stop()
 
         finally:
-            logger.info('Monitor closing queues and threads')
-            observer.join()
+            logger.info('\tMonitor closing queues and threads')
             self.conversion_q.join()
             self.upload_q.join()
-            self.__join_threads__(threads)
+            self.join_threads(threads)
+            observer.stop()
+            observer.join()
 
-    def __join_threads__(self, threads):
+    def join_threads(self, threads):
         for t in threads:
-            logger.warning(f'Joining thread {t.name}. Timeout in {THREAD_TIMEOUT} seconds')
+            logger.warning(f'\tJoining thread {t.name}. Timeout in {THREAD_TIMEOUT} seconds')
             t.running = False
             t.join(THREAD_TIMEOUT)
