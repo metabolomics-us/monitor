@@ -11,7 +11,10 @@ from stasis_client.client import StasisClient
 
 from monitor.Monitor import Monitor
 
-logger.add(sys.stdout, format="{time} {level} {message}", filter="Launcher", level="INFO")
+logger.remove()
+fmt = "<level>{level: <8}</level> | <g>{time:YYYY-MM-DD hh:mm:ss}</g> | <m>{thread.name: <10}</m> | " \
+      "<c>{file: <20} [line:{line: ^3}] {function: <20}</c> | {message}"
+logger.add(sys.stderr, format=fmt, level="INFO")
 
 
 if __name__ == "__main__":

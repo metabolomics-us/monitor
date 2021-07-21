@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import sys
 import time
 from queue import Queue
 from threading import Thread
@@ -14,11 +13,6 @@ from monitor.workers.FillMyBucketWorker import FillMyBucketWorker
 from monitor.workers.PwizWorker import PwizWorker
 
 THREAD_TIMEOUT = 1
-
-logger.remove()
-fmt = "<g>{time}</g> | <level>{level}</level> | <c>{name}:{function} ({line})</c> | <m>{thread.name}</m>\n{message}"
-logger.add(sys.stderr, format=fmt, level="INFO")
-
 
 class Monitor(Thread):
     """A file monitoring class
@@ -41,32 +35,38 @@ class Monitor(Thread):
         self.upload_q = aws_q
         self.running = True
         self.test = test
+        self.threads = []
 
     def run(self):
         """Starts the monitoring of the selected folders"""
 
         observer = Observer()
-        threads = []
         try:
             # Setup the aws uploader worker
-            aws_worker = FillMyBucketWorker(self.stasis_cli, self.config['aws']['bucketName'], self.upload_q,
-                                            self.config['monitor']['storage'], self.test, name='uploader_1')
-
+            aws_worker = FillMyBucketWorker(self,
+                                            self.stasis_cli,
+                                            self.config['aws']['bucketName'],
+                                            self.upload_q,
+                                            self.config['monitor']['storage'],
+                                            self.test)
             threads = [aws_worker]
+
+            # Setup the pwiz workers
             [threads.append(
                 PwizWorker(
+                    self,
                     self.stasis_cli,
                     self.conversion_q,
                     self.upload_q,
                     self.config['monitor']['storage'],
                     self.config['monitor']['msconvert'],
                     self.test,
-                    name=f'converter_{x}'
+                    name=f'Converter{x}'
                 )
             ) for x in range(0, 5)]
 
+            logger.info(f'Starting threads')
             for t in threads:
-                logger.info(f'Starting thread {t.name}')
                 t.start()
 
             event_handler = RawDataEventHandler(
@@ -96,12 +96,12 @@ class Monitor(Thread):
             logger.info('\tMonitor closing queues and threads')
             self.conversion_q.join()
             self.upload_q.join()
-            self.join_threads(threads)
+            self.join_threads()
             observer.stop()
             observer.join()
 
-    def join_threads(self, threads):
-        for t in threads:
+    def join_threads(self):
+        for t in self.threads:
             logger.warning(f'\tJoining thread {t.name}. Timeout in {THREAD_TIMEOUT} seconds')
             t.running = False
             t.join(THREAD_TIMEOUT)

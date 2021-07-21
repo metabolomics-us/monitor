@@ -3,7 +3,6 @@
 
 import os
 import re
-import sys
 import time
 from queue import Queue
 
@@ -11,12 +10,8 @@ from loguru import logger
 from stasis_client.client import StasisClient
 from watchdog.events import FileSystemEventHandler, FileSystemEvent
 
-logger.remove()
-fmt = "<g>{time}</g> | <level>{level}</level> | <c>{name}:{function} ({line})</c> | <m>{thread.name}</m>\n{message}"
-logger.add(sys.stderr, format=fmt, level="INFO")
-
-AGILENT_CONTENTS = r'.*?\.d/\w.*'
-WIFF_COMPANIONS = r'.*?\.(:?scan|~idx2)'
+AGILENT_REGEX = r'^.*?\.d$'
+WIFF_REGEX = r'^.*?\.wiff$'
 
 
 class RawDataEventHandler(FileSystemEventHandler):
@@ -50,11 +45,9 @@ class RawDataEventHandler(FileSystemEventHandler):
             event : DirCreatedEvent or FileCreatedEvent
                 Event representing file/directory creation.
         """
-        if not re.match(AGILENT_CONTENTS, event.key[2]) and not re.match(WIFF_COMPANIONS, event.key[2]):
-            self.__process_event__(event)
-        else:
-            logger.info(f'skipping companion file {event.key[2]}')
-            return
+        if re.match(AGILENT_REGEX, event.src_path) or re.match(WIFF_REGEX, event.src_path):
+            logger.debug(f'{type(event)} created {event.src_path}')
+            self.add_to_queue(event.src_path, event.is_directory)
 
     def on_moved(self, event):
         """Called when a file or directory is moved or renamed.
@@ -64,17 +57,30 @@ class RawDataEventHandler(FileSystemEventHandler):
             event : DirCreatedEvent or FileCreatedEvent
                 Event representing file/directory creation.
         """
-        if not re.match(AGILENT_CONTENTS, event.key[2]) and not re.match(WIFF_COMPANIONS, event.key[2]):
-            self.__process_event__(event)
+        if re.match(AGILENT_REGEX, event.src_path) or re.match(WIFF_REGEX, event.src_path):
+            logger.debug(f'moved {event.dest_path}')
+            self.add_to_queue(event.src_path, event.is_directory)
+
+    def add_to_queue(self, path, is_directory):
+        file, extension = os.path.splitext(path)
+        if extension is '.mzml':
+            self.upload_q.put(path)
+        elif extension in self.extensions:
+            self.wait_for_item(path)
+            self.conversion_q.put(path)
         else:
-            logger.info(f'skipping companion file {event.key[2]}')
-            return
+            logger.error(f'Invalid file {path}')
 
-    def on_modified(self, event):
-        logger.info(f'\tmodified {event.key[2]}')
-        return
+    def wait_for_item(self, path):
+        size = 0
+        while size < self.get_folder_size2(path):
+            logger.info('\t\t...waiting for file copy...\t\t')
+            time.sleep(5)
+            size = self.get_folder_size2(path)
 
-    def __process_event__(self, event: FileSystemEvent):
+
+
+    def process_event(self, event: FileSystemEvent, type, src, dest=None, is_dir=False):
         """Handles the file or folder events
 
         Parameters
@@ -88,14 +94,12 @@ class RawDataEventHandler(FileSystemEventHandler):
             evt_path = event.key[2]
             evt_is_dir = event.key[3]
 
-        file_name, file_extension = os.path.splitext(evt_path)
+        file_name_src, file_extension_src = os.path.splitext(src)
+        file_name_dest, file_extension_dest = os.path.splitext(dest) if dest is not None else None, None
 
-        if evt_is_dir:
-            logger.info(f'dir {evt_path}')
-            if file_extension == '.d':
+        if is_dir:
+            if file_extension_src == '.d' or file_extension_dest == '.d':
                 logger.info(f'agilent {evt_path}')
-            else:
-                logger.info(f'Processing {evt_type} event for path: {evt_path}')
                 #
                 # dir_size = 0
                 # while dir_size < self.get_folder_size2(evt_path):
@@ -112,9 +116,11 @@ class RawDataEventHandler(FileSystemEventHandler):
                 # # 3.5 add to conversion queue
                 # logger.info(f'Adding to conversion {evt_path}')
                 # self.conversion_q.put(evt_path)
+            else:
+                logger.info(f'Processing {type} event for path: {src}')
         else:
-            logger.info(f'file {evt_path}')
-            if file_extension == '.mzml':
+            logger.info(f'file {src & dest}')
+            if file_extension_src == '.mzml' or file_extension_dest == '.mzml':
                 logger.info(f'Processing {evt_type} event for file: {evt_path}')
                 size = 0
                 while size < os.stat(evt_path).st_size:
@@ -133,8 +139,8 @@ class RawDataEventHandler(FileSystemEventHandler):
                 logger.info(f'Adding to upload {evt_path}')
                 self.upload_q.put(evt_path)
 
-            elif file_extension in self.extensions:
-                logger.info(f'Processing {evt_type} event for file: {evt_path}')
+            elif file_extension_src in self.extensions or file_extension_dest in self.extensions:
+                logger.info(f'Processing {type} event for file: {src & dest}')
                 # dir_size = 0
                 # while dir_size < self.get_folder_size(evt_path):
                 #     time.sleep(5)
@@ -149,8 +155,8 @@ class RawDataEventHandler(FileSystemEventHandler):
                 # logger.info(f'Adding to conversion {evt_path}')
                 # self.conversion_q.put(evt_path)
 
-            elif file_extension not in self.extensions:
-                logger.info(f'Unknown file type, conversion not available for: {evt_path}')
+            else:
+                logger.info(f'Unknown file type, conversion not available for: {src and dest}')
 
     def get_folder_size(self, path):
         return os.stat(path).st_size
