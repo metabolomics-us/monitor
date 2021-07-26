@@ -86,7 +86,7 @@ class Monitor(Thread):
             logger.info('Monitor started')
 
             while self.running:
-                time.sleep(1)
+                time.sleep(0.1)
 
         except KeyboardInterrupt:
             logger.info('Monitor shutting down')

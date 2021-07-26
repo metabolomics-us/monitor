@@ -6,6 +6,7 @@ import time
 from queue import Queue
 from threading import Thread
 
+import win32com.client as com
 from loguru import logger
 from stasis_client.client import StasisClient
 
@@ -56,15 +57,11 @@ class PwizWorker(Thread):
 
                 item = self.conversion_q.get()
 
-                file_basename = str(item.split(os.sep)[-1]).split('.')[0]
+                # file_basename, extension = str(item.split(os.sep)[-1]).split('.')
 
-                logger.info(f'FILE: {item} - {file_basename}')
-                curr = 0
-                time.sleep(1)
-                while os.path.getsize(item) > curr:
-                    time.sleep(5)
-                    curr = os.path.getsize(item)
-                    logger.info(f'\t...file copying ({curr})...')
+                logger.info(f'FILE: {item}')
+
+                self.wait_for_item(item)
 
                 # result = subprocess.run([self.runner, item] + self.args, stdout=subprocess.PIPE, check=True)
                 #
@@ -73,9 +70,9 @@ class PwizWorker(Thread):
                 #     # update tracking status and upload to aws
                 #     logger.info(f'Added {resout} to upload queue')
                 #     if not self.test:
-                #         self.stasis_cli.sample_state_update(file_basename, 'converted', f'{file_basename}.mzml')
+                #         self.stasis_cli.sample_state_update(file_basename, 'converted', file_basename+'.'+extension')
                 #     else:
-                #         logger.info(f'fake converted {evt_path}')
+                #         logger.info(f'fake converted {item}')
                 #
                 #     self.upload_q.put(resout)
                 # else:
@@ -91,20 +88,20 @@ class PwizWorker(Thread):
             except subprocess.CalledProcessError as cpe:
                 logger.warning(f'Conversion of {item} failed.')
                 logger.error({'command': cpe.cmd,
-                             'exit_code': cpe.returncode,
-                             'output': cpe.output,
-                             'stdout': cpe.stdout,
-                             'stderr': cpe.stderr})
+                              'exit_code': cpe.returncode,
+                              'output': cpe.output,
+                              'stdout': cpe.stdout,
+                              'stderr': cpe.stderr})
 
                 if not self.test:
                     self.stasis_cli.sample_state_update(str(item.split(os.sep)[-1]).split('.')[0], 'failed')
                 else:
                     logger.warning(f'Fake StasisUpdate: Conversion of {item} failed')
                     logger.error({'command': cpe.cmd,
-                                 'exit_code': cpe.returncode,
-                                 'output': cpe.output,
-                                 'stdout': cpe.stdout,
-                                 'stderr': cpe.stderr})
+                                  'exit_code': cpe.returncode,
+                                  'output': cpe.output,
+                                  'stdout': cpe.stdout,
+                                  'stderr': cpe.stderr})
 
                 self.conversion_q.task_done()
             except KeyboardInterrupt:
@@ -124,3 +121,26 @@ class PwizWorker(Thread):
                 self.conversion_q.task_done()
 
         self.conversion_q.join()
+
+    def get_folder_size(self, path):
+        return os.stat(path).st_size
+
+    def get_folder_size2(self, path):
+        folder_size = 0
+        for (path, dirs, files) in os.walk(path):
+            for file in files:
+                filename = os.path.join(path, file)
+                folder_size += os.path.getsize(filename)
+        return folder_size
+
+    def get_folder_size3(self, path):
+        fso = com.Dispatch("Scripting.FileSystemObject")
+        return fso.GetFolder(path).Size
+
+    def wait_for_item(self, path):
+        """Waits for a file or folder to be fully updated"""
+        size = 0
+        while size < self.get_folder_size3(path):
+            logger.info('\t\t...waiting for file copy...\t\t')
+            time.sleep(1)
+            size = self.get_folder_size3(path)
