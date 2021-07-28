@@ -13,8 +13,6 @@ monitor:
 
 stasis:
   url: "https://test-api.metabolomics.us"
-  port: "80"
 
 aws:
-  bucketName: "wcmc-data-stasis-raw-test"
-
+  bucketName: "data-carrot"

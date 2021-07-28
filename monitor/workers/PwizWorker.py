@@ -45,7 +45,7 @@ class PwizWorker(Thread):
         self.args = ['--mzML', '-e', '.mzml', '--zlib',
                      '--filter', '"peakPicking true 1-"',
                      '--filter', '"zeroSamples removeExtra"',
-                     '-o', os.path.join('.', 'tmp')]
+                     '-o', storage]
 
     def run(self):
         """Starts the processing of elements in the conversion queue"""
@@ -59,34 +59,34 @@ class PwizWorker(Thread):
                 file_basename, extension = str(item.split(os.sep)[-1]).split('.')
 
                 logger.info(f'FILE: {item}')
+                self.wait_for_item(item)
 
                 if item.endswith('.mzml'):
-                    logger.info('mzml')
                     self.upload_q.append(item)
                 else:
-                    logger.info('Not mzml')
-                    self.wait_for_item(item)
                     if not self.test:
+                        logger.info(f'RUNNING: {[self.runner, item, *self.args]}')
                         result = subprocess.run([self.runner, item] + self.args, stdout=subprocess.PIPE, check=True)
 
                         if result.returncode == 0:
                             resout = result.stdout.decode('ascii').split('writing output file: ')[-1].strip()
                             # update tracking status and upload to aws
                             logger.info(f'Added {resout} to upload queue')
-                            self.stasis_cli.sample_state_update(file_basename, 'converted',
-                                                                file_basename + '.' + extension)
+                            self.pass_sample(extension, file_basename)
                             self.upload_q.append(resout)
 
                         else:
                             # update tracking status
                             logger.info(f'Setting {item} as failed')
                             if not self.test:
-                                self.stasis_cli.sample_state_update(file_basename, 'failed')
+                                self.fail_sample(str(item.split(os.sep)[-1]).split('.')[0])
                             else:
                                 logger.warning(f'Fake StasisUpdate: Conversion of {item} failed')
                     else:
                         logger.info(f'Fake StasisUpdate: Converted {item}')
+                        logger.info(f'RUNNING: {[self.runner, item] + self.args}')
                         self.upload_q.append(item)
+                        logger.info(f'Added to upload queue')
 
             except subprocess.CalledProcessError as cpe:
                 logger.warning(f'Conversion of {item} failed.')
@@ -97,7 +97,7 @@ class PwizWorker(Thread):
                               'stderr': cpe.stderr})
 
                 if not self.test:
-                    self.stasis_cli.sample_state_update(str(item.split(os.sep)[-1]).split('.')[0], 'failed')
+                    self.fail_sample(str(item.split(os.sep)[-1]).split('.')[0])
                 else:
                     logger.warning(f'Fake StasisUpdate: Conversion of {item} failed')
                     logger.error({'command': cpe.cmd,
@@ -113,14 +113,14 @@ class PwizWorker(Thread):
                 self.parent.join_threads()
 
             except IndexError:
-                time.sleep(10)
+                time.sleep(1)
                 continue
 
             except Exception as ex:
                 logger.error(f'Skipping conversion of sample {item} -- Error: {str(ex)}')
 
                 if not self.test:
-                    self.stasis_cli.sample_state_update(str(item.split(os.sep)[-1]).split('.')[0], 'failed')
+                    self.fail_sample(str(item.split(os.sep)[-1]).split('.')[0])
                 else:
                     logger.error(f'Fake StasisUpdate: Skipping conversion of sample {str(item)} -- Error: {str(ex)}')
                 continue
@@ -167,3 +167,9 @@ class PwizWorker(Thread):
                 c += 1
             elif c == 5:
                 break
+
+    def pass_sample(self, extension, file_basename):
+        self.stasis_cli.sample_state_update(file_basename, 'converted', f'{file_basename}.{extension}')
+
+    def fail_sample(self, item):
+        self.stasis_cli.sample_state_update(item, 'failed')

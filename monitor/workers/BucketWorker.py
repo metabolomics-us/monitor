@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import os
-import shutil
 import time
 from collections import deque
 from threading import Thread
@@ -53,14 +52,14 @@ class BucketWorker(Thread):
                         logger.info(f'File {item} saved to {self.bucket.bucket_name}')
                     else:
                         logger.info(f'Fail to upload {item} to {self.bucket.bucket_name}')
-                        self.stasis_cli.sample_state_update(base_file, 'failed')
+                        self.fail_sample(base_file)
 
-                    base_file, extension = os.path.splitext(item.split(os.sep)[-1])
-                    dest = os.path.join(self.storage, base_file + extension)
-                    logger.info(f'base_file {base_file} || extension {extension}')
-                    logger.info(f'Moving {item} to perm storage {dest}')
-                    if not self.test:
-                        shutil.move(item, os.path.join(self.storage, base_file + extension))
+                    # base_file, extension = os.path.splitext(item.split(os.sep)[-1])
+                    # dest = os.path.join(self.storage, base_file + extension)
+                    # logger.info(f'base_file {base_file} || extension {extension}')
+                    # logger.info(f'Moving {item} to perm storage {dest}')
+                    # if not self.test:
+                    #     shutil.move(item, os.path.join(self.storage, base_file + extension))
                 else:
                     logger.info(f'Fake StasisUpdate: Uploaded {item} to {self.bucket.bucket_name}')
 
@@ -71,19 +70,22 @@ class BucketWorker(Thread):
                 continue
 
             except IndexError:
-                time.sleep(10)
+                time.sleep(1)
                 continue
 
             except Exception as ex:
                 logger.error(f'Error uploading sample {item}: {str(ex)}')
                 if not self.test:
-                    self.stasis_cli.sample_state_update(str(item.split(os.sep)[-1]).split('.')[0], 'failed')
+                    self.fail_sample(str(item.split(os.sep)[-1]).split('.')[0])
                 else:
                     logger.info(f'Fake StasisUpdate: Error uploading sample {item}: {str(ex)}')
                 continue
 
             logger.info(f'next task, queue size: {len(self.upload_q)}')
         logger.info(f'Stopping {self.name}')
+
+    def fail_sample(self, base_file):
+        self.stasis_cli.sample_state_update(base_file, 'failed')
 
     def exists(self, filename):
         return self.bucket.exists(filename)
