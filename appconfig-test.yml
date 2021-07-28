@@ -4,9 +4,9 @@ monitor:
 
   extensions:
     - ".d"
-    - ".mzml"
     - ".raw"
     - ".wiff"
+    - ".mzml"
 
   storage: "d:/mzml"
   msconvert: "c:/tools/pwiz-3.0.20109-5f47a781c/msconvert.exe"

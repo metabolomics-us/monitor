@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import time
-from queue import Queue
+from collections import deque
 from threading import Thread
 
 from loguru import logger
@@ -9,10 +9,11 @@ from stasis_client.client import StasisClient
 from watchdog.observers import Observer
 
 from monitor.RawDataEventHandler import RawDataEventHandler
-from monitor.workers.FillMyBucketWorker import FillMyBucketWorker
+from monitor.workers.BucketWorker import BucketWorker
 from monitor.workers.PwizWorker import PwizWorker
 
 THREAD_TIMEOUT = 1
+
 
 class Monitor(Thread):
     """A file monitoring class
@@ -27,7 +28,7 @@ class Monitor(Thread):
             A client class to the DataFormer rest API
     """
 
-    def __init__(self, config, stasis_cli: StasisClient, conv_q: Queue, aws_q: Queue, test=False, daemon=False):
+    def __init__(self, config, stasis_cli: StasisClient, conv_q: deque, aws_q: deque, test=False, daemon=False):
         super().__init__(name='Monitor', daemon=daemon)
         self.config = config
         self.stasis_cli = stasis_cli
@@ -43,12 +44,12 @@ class Monitor(Thread):
         observer = Observer()
         try:
             # Setup the aws uploader worker
-            aws_worker = FillMyBucketWorker(self,
-                                            self.stasis_cli,
-                                            self.config['aws']['bucketName'],
-                                            self.upload_q,
-                                            self.config['monitor']['storage'],
-                                            self.test)
+            aws_worker = BucketWorker(self,
+                                      self.stasis_cli,
+                                      self.config['aws']['bucketName'],
+                                      self.upload_q,
+                                      self.config['monitor']['storage'],
+                                      self.test)
             threads = [aws_worker]
 
             # Setup the pwiz workers
@@ -94,8 +95,8 @@ class Monitor(Thread):
 
         finally:
             logger.info('\tMonitor closing queues and threads')
-            self.conversion_q.join()
-            self.upload_q.join()
+            self.conversion_q.clear()
+            self.upload_q.clear()
             self.join_threads()
             observer.stop()
             observer.join()

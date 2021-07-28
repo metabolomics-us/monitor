@@ -7,7 +7,7 @@ monitor:
     - ".d"
     - ".raw"
     - ".wiff"
-#    - ".mzml"
+    - ".mzml"
 #    - ".cdf"
 #    - ".peg"
 

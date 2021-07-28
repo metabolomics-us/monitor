@@ -3,7 +3,7 @@
 
 import argparse
 import sys
-from queue import Queue
+from collections import deque
 
 import yamlconf
 from loguru import logger
@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
     stasis_cli = StasisClient(config['stasis']['url'])
 
-    conv_q = Queue()
-    aws_q = Queue()
+    conv_q = deque([])
+    aws_q = deque([])
 
     Monitor(config, stasis_cli, conv_q, aws_q, test=args.test).run()

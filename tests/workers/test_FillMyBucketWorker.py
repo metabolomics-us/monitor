@@ -7,7 +7,7 @@ import yamlconf
 from mock import MagicMock
 
 from monitor.Bucket import Bucket
-from monitor.workers.FillMyBucketWorker import FillMyBucketWorker
+from monitor.workers.BucketWorker import BucketWorker
 
 
 class TestFillMyBucketWorker(unittest.TestCase):
@@ -30,7 +30,7 @@ class TestFillMyBucketWorker(unittest.TestCase):
         filename = test_file.split(os.sep)[-1]
 
         bucket = Bucket('data-carrot')
-        worker = FillMyBucketWorker(st_cli, 'data-carrot', upload_q, self.config['monitor']['storage'])
+        worker = BucketWorker(st_cli, 'data-carrot', upload_q, self.config['monitor']['storage'])
         bucket.delete(filename)
         assert not bucket.exists(filename)
 
