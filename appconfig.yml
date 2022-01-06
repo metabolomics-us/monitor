@@ -1,8 +1,7 @@
 monitor:
   paths:
-#    - "D:/studies/core"
-#    - "D:/studies/research"
-    - "D:/data"
+    - "D:/studies/core"
+    - "D:/studies/research"
 
   extensions:
     - ".d"
@@ -20,10 +19,8 @@ monitor:
 # to be added - we don't have any converter for these files yet
 #    - ".smp"
 
-#  storage: "D:/lunabckup/mzml/autoconv"
-#  msconvert: "D:/tools/proteowizard/msconvert.exe"
-  storage: "d:/mzml"
-  msconvert: "c:/tools/pwiz-3.0.20109-5f47a781c/msconvert.exe"
+  storage: "D:\\lunabkup\\mzml\\autoconv"
+  msconvert: "D:\\tools\\pwiz-3.0.21209\\msconvert.exe"
 
 stasis:
   url: "https://api.metabolomics.us"

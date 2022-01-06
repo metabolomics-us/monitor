@@ -60,7 +60,11 @@ class PwizWorker(Thread):
 
                 logger.info(f'FILE: {item}')
                 self.wait_for_item(item)
-
+                
+                if any([x in item for x in [f'{os.sep}DNU{os.sep}', 'preinj']]):
+                    logger.info('Skipping conversion of DNU sample {item}')
+                    continue
+                
                 if item.endswith('.mzml'):
                     self.upload_q.append(item)
                 else:
@@ -72,14 +76,16 @@ class PwizWorker(Thread):
                             resout = result.stdout.decode('ascii').split('writing output file: ')[-1].strip()
                             # update tracking status and upload to aws
                             logger.info(f'Added {resout} to upload queue')
-                            self.pass_sample(extension, file_basename)
+                            logger.info(f'--- add "converted" status to AWS tracking table for sample "{file_basename}.{extension}"')
+                            #self.pass_sample(extension, file_basename)
                             self.upload_q.append(resout)
 
                         else:
                             # update tracking status
-                            logger.info(f'Setting {item} as failed')
+                            logger.warning(f'Setting {item} as failed')
                             if not self.test:
-                                self.fail_sample(str(item.split(os.sep)[-1]).split('.')[0])
+                                logger.error(f'--- add "failed conversion" status to AWS tracking table for sample "{file_basename}.{extension}"')
+                                #self.fail_sample(str(item.split(os.sep)[-1]).split('.')[0])
                             else:
                                 logger.warning(f'Fake StasisUpdate: Conversion of {item} failed')
                     else:
@@ -97,7 +103,8 @@ class PwizWorker(Thread):
                               'stderr': cpe.stderr})
 
                 if not self.test:
-                    self.fail_sample(str(item.split(os.sep)[-1]).split('.')[0])
+                    logger.error(f'--- add "failed conversion" status to AWS tracking table for sample "{file_basename}.{extension}"')
+                    #self.fail_sample(str(item.split(os.sep)[-1]).split('.')[0])
                 else:
                     logger.warning(f'Fake StasisUpdate: Conversion of {item} failed')
                     logger.error({'command': cpe.cmd,
@@ -120,7 +127,8 @@ class PwizWorker(Thread):
                 logger.error(f'Skipping conversion of sample {item} -- Error: {str(ex)}')
 
                 if not self.test:
-                    self.fail_sample(str(item.split(os.sep)[-1]).split('.')[0])
+                    logger.error(f'--- add "failed conversion" status to AWS tracking table for sample "{file_basename}.{extension}"')
+                    #self.fail_sample(str(item.split(os.sep)[-1]).split('.')[0])
                 else:
                     logger.error(f'Fake StasisUpdate: Skipping conversion of sample {str(item)} -- Error: {str(ex)}')
                 continue

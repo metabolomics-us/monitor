@@ -51,8 +51,9 @@ class BucketWorker(Thread):
                     if self.bucket.save(item):
                         logger.info(f'File {item} saved to {self.bucket.bucket_name}')
                     else:
-                        logger.info(f'Fail to upload {item} to {self.bucket.bucket_name}')
-                        self.fail_sample(base_file)
+                        logger.error(f'Fail to upload {item} to {self.bucket.bucket_name}')
+                        logger.error(f'--- add "failed upload" status to AWS tracking table for sample "{file_basename}.{extension}"')
+                        #self.fail_sample(base_file)
 
                     # base_file, extension = os.path.splitext(item.split(os.sep)[-1])
                     # dest = os.path.join(self.storage, base_file + extension)
@@ -76,7 +77,9 @@ class BucketWorker(Thread):
             except Exception as ex:
                 logger.error(f'Error uploading sample {item}: {str(ex)}')
                 if not self.test:
-                    self.fail_sample(str(item.split(os.sep)[-1]).split('.')[0])
+                    fname, ext = str(item.split(os.sep)[-1]).split('.')
+                    logger.error(f'--- add "failed upload" status to AWS tracking table for sample "{fname}.{ext}"')
+                    #self.fail_sample(str(item.split(os.sep)[-1]).split('.')[0])
                 else:
                     logger.info(f'Fake StasisUpdate: Error uploading sample {item}: {str(ex)}')
                 continue

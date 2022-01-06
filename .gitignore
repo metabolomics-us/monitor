@@ -3,11 +3,12 @@ __pycache__
 *.pyo
 .pytest_cache
 
+monitor*.log
+monitor_out.txt
+
 .idea/
 *.egg-info/
 build/
 dist/
 tmp/
 venv/
-
-monitor_out.txt
