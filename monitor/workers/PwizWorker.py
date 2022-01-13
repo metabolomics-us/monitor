@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
 import os
+import re
 import subprocess
 import time
 from collections import deque
@@ -37,7 +39,7 @@ class PwizWorker(Thread):
         self.stasis_cli = st_cli
         self.conversion_q = conversion_q
         self.upload_q = upload_q
-        self.storage = storage
+        self.storage = storage if storage.endswith(os.path.sep) else storage + os.path.sep
         self.test = test
         self._lock = Lock()
 
@@ -45,7 +47,7 @@ class PwizWorker(Thread):
         self.args = ['--mzML', '-e', '.mzml', '--zlib',
                      '--filter', '"peakPicking true 1-"',
                      '--filter', '"zeroSamples removeExtra"',
-                     '-o', storage]
+                     '-o']
 
     def run(self):
         """Starts the processing of elements in the conversion queue"""
@@ -55,16 +57,23 @@ class PwizWorker(Thread):
         while self.running:
             try:
                 item = self.conversion_q.popleft()
+                mxid = re.search(r'_(mx\d{6,7})_', item, re.IGNORECASE)
+
+                if mxid:
+                    self.storage = self.storage + mxid.group(1).lower() + os.path.sep
+                else:
+                    self.storage = self.storage + 'autoconv' + os.path.sep
+                self.args.append(self.storage)
 
                 file_basename, extension = str(item.split(os.sep)[-1]).split('.')
 
                 logger.info(f'FILE: {item}')
                 self.wait_for_item(item)
-                
+
                 if any([x in item for x in [f'{os.sep}DNU{os.sep}', 'preinj']]):
                     logger.info('Skipping conversion of DNU sample {item}')
                     continue
-                
+
                 if item.endswith('.mzml'):
                     self.upload_q.append(item)
                 else:
@@ -73,26 +82,36 @@ class PwizWorker(Thread):
                         result = subprocess.run([self.runner, item] + self.args, stdout=subprocess.PIPE, check=True)
 
                         if result.returncode == 0:
+                            logger.info('RESULT: ' + result)
                             resout = result.stdout.decode('ascii').split('writing output file: ')[-1].strip()
                             # update tracking status and upload to aws
                             logger.info(f'Added {resout} to upload queue')
-                            logger.info(f'--- add "converted" status to AWS tracking table for sample "{file_basename}.{extension}"')
-                            #self.pass_sample(extension, file_basename)
+                            logger.info(
+                                f'--- add "converted" status to AWS tracking table for sample "{file_basename}.{extension}"')
+                            # self.pass_sample(extension, file_basename)
                             self.upload_q.append(resout)
 
                         else:
                             # update tracking status
                             logger.warning(f'Setting {item} as failed')
                             if not self.test:
-                                logger.error(f'--- add "failed conversion" status to AWS tracking table for sample "{file_basename}.{extension}"')
-                                #self.fail_sample(str(item.split(os.sep)[-1]).split('.')[0])
+                                logger.error(
+                                    f'--- add "failed conversion" status to AWS tracking table for sample "{file_basename}.{extension}"')
+                                # self.fail_sample(str(item.split(os.sep)[-1]).split('.')[0])
                             else:
                                 logger.warning(f'Fake StasisUpdate: Conversion of {item} failed')
                     else:
                         logger.info(f'Fake StasisUpdate: Converted {item}')
                         logger.info(f'RUNNING: {[self.runner, item] + self.args}')
-                        self.upload_q.append(item)
-                        logger.info(f'Added to upload queue')
+                        resout = self.storage + file_basename + '.mzml'
+                        os.makedirs(os.path.dirname(resout), exist_ok=True)
+                        with open(resout, 'w') as d:
+                            d.flush()
+
+                        time.sleep(1)
+
+                        logger.info(f'Added {resout} to upload queue')
+                        self.upload_q.append(resout)
 
             except subprocess.CalledProcessError as cpe:
                 logger.warning(f'Conversion of {item} failed.')
@@ -103,8 +122,9 @@ class PwizWorker(Thread):
                               'stderr': cpe.stderr})
 
                 if not self.test:
-                    logger.error(f'--- add "failed conversion" status to AWS tracking table for sample "{file_basename}.{extension}"')
-                    #self.fail_sample(str(item.split(os.sep)[-1]).split('.')[0])
+                    logger.error(
+                        f'--- add "failed conversion" status to AWS tracking table for sample "{file_basename}.{extension}"')
+                    # self.fail_sample(str(item.split(os.sep)[-1]).split('.')[0])
                 else:
                     logger.warning(f'Fake StasisUpdate: Conversion of {item} failed')
                     logger.error({'command': cpe.cmd,
@@ -127,8 +147,9 @@ class PwizWorker(Thread):
                 logger.error(f'Skipping conversion of sample {item} -- Error: {str(ex)}')
 
                 if not self.test:
-                    logger.error(f'--- add "failed conversion" status to AWS tracking table for sample "{file_basename}.{extension}"')
-                    #self.fail_sample(str(item.split(os.sep)[-1]).split('.')[0])
+                    logger.error(
+                        f'--- add "failed conversion" status to AWS tracking table for sample "{file_basename}.{extension}"')
+                    # self.fail_sample(str(item.split(os.sep)[-1]).split('.')[0])
                 else:
                     logger.error(f'Fake StasisUpdate: Skipping conversion of sample {str(item)} -- Error: {str(ex)}')
                 continue

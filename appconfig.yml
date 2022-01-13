@@ -19,7 +19,7 @@ monitor:
 # to be added - we don't have any converter for these files yet
 #    - ".smp"
 
-  storage: "D:\\lunabkup\\mzml\\autoconv"
+  storage: "D:\\lunabkup\\mzml"
   msconvert: "D:\\tools\\pwiz-3.0.21209\\msconvert.exe"
 
 stasis:
