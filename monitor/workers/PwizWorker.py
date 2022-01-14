@@ -51,88 +51,51 @@ class PwizWorker(Thread):
 
     def run(self):
         """Starts the processing of elements in the conversion queue"""
-        item = local()
         self.running = True
+
+        item = local()
 
         while self.running:
             try:
                 item = self.conversion_q.popleft()
-                mxid = re.search(r'_(mx\d{6,7})_', item, re.IGNORECASE)
-
-                if mxid:
-                    self.storage = self.storage + mxid.group(1).lower() + os.path.sep
-                else:
-                    self.storage = self.storage + 'autoconv' + os.path.sep
-                self.args.append(self.storage)
-
                 file_basename, extension = str(item.split(os.sep)[-1]).split('.')
+
+                self.update_output(item)
 
                 logger.info(f'FILE: {item}')
                 self.wait_for_item(item)
 
-                if any([x in item for x in [f'{os.sep}DNU{os.sep}', 'preinj']]):
-                    logger.info('Skipping conversion of DNU sample {item}')
+                if any([x in item for x in [f'{os.sep}DNU{os.sep}', 'preinj', 'test']]):
+                    logger.info(f'Skipping conversion of DNU sample {item}')
                     continue
 
                 if item.endswith('.mzml'):
                     self.upload_q.append(item)
                 else:
-                    if not self.test:
-                        logger.info(f'RUNNING: {[self.runner, item, *self.args]}')
-                        result = subprocess.run([self.runner, item] + self.args, stdout=subprocess.PIPE, check=True)
-
-                        if result.returncode == 0:
-                            logger.info('RESULT: ' + result)
-                            resout = result.stdout.decode('ascii').split('writing output file: ')[-1].strip()
-                            # update tracking status and upload to aws
-                            logger.info(f'Added {resout} to upload queue')
-                            logger.info(
-                                f'--- add "converted" status to AWS tracking table for sample "{file_basename}.{extension}"')
-                            # self.pass_sample(extension, file_basename)
-                            self.upload_q.append(resout)
-
+                    try:
+                        if not self.test:
+                            self.convert(extension, file_basename, item)
                         else:
-                            # update tracking status
-                            logger.warning(f'Setting {item} as failed')
-                            if not self.test:
-                                logger.error(
-                                    f'--- add "failed conversion" status to AWS tracking table for sample "{file_basename}.{extension}"')
-                                # self.fail_sample(str(item.split(os.sep)[-1]).split('.')[0])
-                            else:
-                                logger.warning(f'Fake StasisUpdate: Conversion of {item} failed')
-                    else:
-                        logger.info(f'Fake StasisUpdate: Converted {item}')
-                        logger.info(f'RUNNING: {[self.runner, item] + self.args}')
-                        resout = self.storage + file_basename + '.mzml'
-                        os.makedirs(os.path.dirname(resout), exist_ok=True)
-                        with open(resout, 'w') as d:
-                            d.flush()
+                            self.fake_convert(file_basename, extension, item)
 
-                        time.sleep(1)
+                    except subprocess.CalledProcessError as cpe:
+                        logger.warning(f'Conversion of {item} failed.')
+                        logger.error({'command': cpe.cmd,
+                                      'exit_code': cpe.returncode,
+                                      'output': cpe.output,
+                                      'stdout': cpe.stdout,
+                                      'stderr': cpe.stderr})
 
-                        logger.info(f'Added {resout} to upload queue')
-                        self.upload_q.append(resout)
-
-            except subprocess.CalledProcessError as cpe:
-                logger.warning(f'Conversion of {item} failed.')
-                logger.error({'command': cpe.cmd,
-                              'exit_code': cpe.returncode,
-                              'output': cpe.output,
-                              'stdout': cpe.stdout,
-                              'stderr': cpe.stderr})
-
-                if not self.test:
-                    logger.error(
-                        f'--- add "failed conversion" status to AWS tracking table for sample "{file_basename}.{extension}"')
-                    # self.fail_sample(str(item.split(os.sep)[-1]).split('.')[0])
-                else:
-                    logger.warning(f'Fake StasisUpdate: Conversion of {item} failed')
-                    logger.error({'command': cpe.cmd,
-                                  'exit_code': cpe.returncode,
-                                  'output': cpe.output,
-                                  'stdout': cpe.stdout,
-                                  'stderr': cpe.stderr})
-                continue
+                        if not self.test:
+                            self.fail_sample(file_basename, extension)
+                        else:
+                            logger.warning(f'Fake StasisUpdate: Conversion of {item} failed')
+                            logger.error({'command': cpe.cmd,
+                                          'exit_code': cpe.returncode,
+                                          'output': cpe.output,
+                                          'stdout': cpe.stdout,
+                                          'stderr': cpe.stderr})
+                        continue
 
             except KeyboardInterrupt:
                 logger.warning(f'Stopping {self.name} due to Control+C')
@@ -145,17 +108,48 @@ class PwizWorker(Thread):
 
             except Exception as ex:
                 logger.error(f'Skipping conversion of sample {item} -- Error: {str(ex)}')
-
                 if not self.test:
-                    logger.error(
-                        f'--- add "failed conversion" status to AWS tracking table for sample "{file_basename}.{extension}"')
-                    self.fail_sample(str(item.split(os.sep)[-1]).split('.')[0])
+                    self.fail_sample(str(item.split(os.sep)[-1]).split('.'))
                 else:
                     logger.error(f'Fake StasisUpdate: Skipping conversion of sample {str(item)} -- Error: {str(ex)}')
                 continue
 
             logger.info(f'next task, queue size? {len(self.conversion_q)}')
         logger.info(f'Stopping {self.name}')
+
+    def convert(self, extension, file_basename, item):
+        logger.info(f'RUNNING: {[self.runner, item, *self.args]}')
+        result = subprocess.run([self.runner, item] + self.args, stdout=subprocess.PIPE, check=True)
+        if result.returncode == 0:
+            resout = re.search(r'writing output file: (.*?)\n', result.stdout.decode('ascii')).group(1).strip()
+
+            self.pass_sample(extension, file_basename)
+
+            # update tracking status and upload to aws
+            logger.info(f'\tAdd {resout} to upload queue')
+            self.upload_q.append(resout)
+
+        else:
+            # update tracking status
+            logger.warning(f'\tSetting {item} as failed')
+            if not self.test:
+                self.fail_sample(file_basename, extension)
+            else:
+                logger.warning(f'Fake StasisUpdate: Conversion of {item} failed')
+
+    def fake_convert(self, filename_base, extension, item):
+        logger.info(f'RUNNING: {[self.runner, item] + self.args}')
+        logger.info(f'Fake StasisUpdate: Converted {item}')
+        resout = self.storage + filename_base + '.mzml'
+
+        os.makedirs(os.path.dirname(resout), exist_ok=True)
+        with open(resout, 'w') as d:
+            d.flush()
+
+        time.sleep(1)
+
+        logger.info(f'Added {resout} to upload queue')
+        self.upload_q.append(resout)
 
     def get_file_size(self, path):
         return os.stat(path).st_size
@@ -197,15 +191,31 @@ class PwizWorker(Thread):
             elif c == 5:
                 break
 
-    def pass_sample(self, extension, file_basename):
+    def pass_sample(self, file_basename, extension):
         try:
+            logger.info(f'\tAdd "converted" status to stasis for sample "{file_basename}.{extension}"')
             self.stasis_cli.sample_state_update(file_basename, 'converted', f'{file_basename}.{extension}')
         except Exception as ex:
-            logger.error(ex.args)
+            logger.error(f'\tStasis client can\'t send "converted" status for sample {file_basename}\n'
+                         f'\tResponse: {str(ex)}')
+            pass
 
-    def fail_sample(self, item):
+    def fail_sample(self, file_basename, extension):
         try:
-            self.stasis_cli.sample_state_update(item, 'failed')
+            logger.error(f'\tAdd "failed" conversion status to stasis for sample "{file_basename}.{extension}"')
+            self.stasis_cli.sample_state_update(file_basename, 'failed')
         except Exception as ex:
-            logger.error(ex.args)
+            logger.error(f'\tStasis client can\'t send "failed" status for sample {file_basename}\n'
+                         f'\tResponse: {str(ex)}')
 
+    def update_output(self, item):
+        mxid = re.search(r'_(mx\d{6,7})_', item, re.IGNORECASE)
+
+        if mxid:
+            storage = self.storage + mxid.group(1).lower() + os.path.sep
+        else:
+            storage = self.storage + 'autoconv' + os.path.sep
+        self.args.append(storage)
+
+        logger.info(f'Storage: {storage}')
+        os.makedirs(storage, exist_ok=True)

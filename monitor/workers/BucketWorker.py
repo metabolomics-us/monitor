@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
 import os
 import time
 from collections import deque
@@ -45,22 +46,13 @@ class BucketWorker(Thread):
                 item = self.upload_q.popleft()
 
                 logger.info(f'Sending ({item}) {os.path.getsize(item)} bytes to aws')
-                base_file, extension = os.path.splitext(item.split(os.sep)[-1])
+                file_basename, extension = str(item.split(os.sep)[-1]).split('.')
 
                 if not self.test:
                     if self.bucket.save(item):
                         logger.info(f'File {item} saved to {self.bucket.bucket_name}')
                     else:
-                        logger.error(f'Fail to upload {item} to {self.bucket.bucket_name}')
-                        logger.error(f'--- add "failed upload" status to AWS tracking table for sample "{file_basename}.{extension}"')
-                        #self.fail_sample(base_file)
-
-                    # base_file, extension = os.path.splitext(item.split(os.sep)[-1])
-                    # dest = os.path.join(self.storage, base_file + extension)
-                    # logger.info(f'base_file {base_file} || extension {extension}')
-                    # logger.info(f'Moving {item} to perm storage {dest}')
-                    # if not self.test:
-                    #     shutil.move(item, os.path.join(self.storage, base_file + extension))
+                        self.fail_sample(file_basename, extension)
                 else:
                     logger.info(f'Fake StasisUpdate: Uploaded {item} to {self.bucket.bucket_name}')
 
@@ -78,8 +70,7 @@ class BucketWorker(Thread):
                 logger.error(f'Error uploading sample {item}: {str(ex)}')
                 if not self.test:
                     fname, ext = str(item.split(os.sep)[-1]).split('.')
-                    logger.error(f'--- add "failed upload" status to AWS tracking table for sample "{fname}.{ext}"')
-                    #self.fail_sample(str(item.split(os.sep)[-1]).split('.')[0])
+                    self.fail_sample(fname, ext)
                 else:
                     logger.info(f'Fake StasisUpdate: Error uploading sample {item}: {str(ex)}')
                 continue
@@ -87,11 +78,13 @@ class BucketWorker(Thread):
             logger.info(f'next task, queue size: {len(self.upload_q)}')
         logger.info(f'Stopping {self.name}')
 
-    def fail_sample(self, base_file):
+    def fail_sample(self, file_basename, extension):
         try:
-            self.stasis_cli.sample_state_update(base_file, 'failed')
+            logger.error(f'\tAdd "failed" upload status to stasis for sample "{file_basename}.{extension}"')
+            self.stasis_cli.sample_state_update(file_basename, 'failed')
         except Exception as ex:
-            logger.error(ex.args)
+            logger.error(f'\tStasis client can\'t send "failed" status for sample {file_basename}\n'
+                         f'\tResponse: {str(ex)}')
 
     def exists(self, filename):
         return self.bucket.exists(filename)

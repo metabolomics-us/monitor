@@ -36,14 +36,11 @@ if __name__ == "__main__":
     if args.test:
         configFile = 'appconfig-test.yml'
         logger.warning('\nRunning in TEST mode !!!\n')
-        token = os.getenv("TEST_STASIS_API_TOKEN")
-    else:
-        token = os.getenv("PROD_STASIS_API_TOKEN")
 
     with open(configFile, 'r') as stream:
         config = yamlconf.load(stream)
 
-    stasis_cli = StasisClient(config['stasis']['url'], token)
+    stasis_cli = StasisClient(config['stasis']['url'], os.getenv(config['stasis']['api_key_var']))
 
     conv_q = deque([])
     aws_q = deque([])

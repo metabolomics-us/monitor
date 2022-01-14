@@ -1,6 +1,6 @@
 monitor:
   paths:
-    - "d:/data"
+    - "d:\\data"
 
   extensions:
     - ".d"
@@ -8,11 +8,12 @@ monitor:
     - ".wiff"
     - ".mzml"
 
-  storage: "d:/mzml"
-  msconvert: "c:/tools/pwiz-3.0.20109-5f47a781c/msconvert.exe"
+  storage: "d:\\mzml"
+  msconvert: "c:\\tools\\pwiz-3.0.20109-5f47a781c\\msconvert.exe"
 
 stasis:
   url: "https://test-api.metabolomics.us"
+  api_key_var: "TEST_STASIS_API_TOKEN"
 
 aws:
   bucketName: "data-carrot"
