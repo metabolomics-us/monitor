@@ -88,7 +88,10 @@ class BucketWorker(Thread):
         logger.info(f'Stopping {self.name}')
 
     def fail_sample(self, base_file):
-        self.stasis_cli.sample_state_update(base_file, 'failed')
+        try:
+            self.stasis_cli.sample_state_update(base_file, 'failed')
+        except Exception as ex:
+            logger.error(ex.args)
 
     def exists(self, filename):
         return self.bucket.exists(filename)

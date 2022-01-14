@@ -149,7 +149,7 @@ class PwizWorker(Thread):
                 if not self.test:
                     logger.error(
                         f'--- add "failed conversion" status to AWS tracking table for sample "{file_basename}.{extension}"')
-                    # self.fail_sample(str(item.split(os.sep)[-1]).split('.')[0])
+                    self.fail_sample(str(item.split(os.sep)[-1]).split('.')[0])
                 else:
                     logger.error(f'Fake StasisUpdate: Skipping conversion of sample {str(item)} -- Error: {str(ex)}')
                 continue
@@ -198,7 +198,14 @@ class PwizWorker(Thread):
                 break
 
     def pass_sample(self, extension, file_basename):
-        self.stasis_cli.sample_state_update(file_basename, 'converted', f'{file_basename}.{extension}')
+        try:
+            self.stasis_cli.sample_state_update(file_basename, 'converted', f'{file_basename}.{extension}')
+        except Exception as ex:
+            logger.error(ex.args)
 
     def fail_sample(self, item):
-        self.stasis_cli.sample_state_update(item, 'failed')
+        try:
+            self.stasis_cli.sample_state_update(item, 'failed')
+        except Exception as ex:
+            logger.error(ex.args)
+
