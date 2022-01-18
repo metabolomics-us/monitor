@@ -12,7 +12,7 @@ monitor:
   msconvert: "c:\\tools\\pwiz-3.0.20109-5f47a781c\\msconvert.exe"
 
 stasis:
-  url: "https://test-api.metabolomics.us"
+  url_var: "TEST_STASIS_API_URL"
   api_key_var: "TEST_STASIS_API_TOKEN"
 
 aws:

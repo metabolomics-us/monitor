@@ -40,7 +40,8 @@ if __name__ == "__main__":
     with open(configFile, 'r') as stream:
         config = yamlconf.load(stream)
 
-    stasis_cli = StasisClient(config['stasis']['url'], os.getenv(config['stasis']['api_key_var']))
+    stasis_cli = StasisClient(os.getenv(config['stasis']['url_var'], "https://test-api.metabolomics.us"), 
+                              os.getenv(config['stasis']['api_key_var'], "9MjbJRbAtj8spCJJVTPbP3YWc4wjlW0c7AP47Pmi"))
 
     conv_q = deque([])
     aws_q = deque([])

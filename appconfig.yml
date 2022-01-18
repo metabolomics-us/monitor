@@ -20,12 +20,11 @@ monitor:
 #    - ".smp"
 
   storage: "D:\\lunabkup\\mzml"
-#  msconvert: "D:\\tools\\pwiz-3.0.21209\\msconvert.exe"
-  msconvert: "c:\\tools\\pwiz-3.0.20109-5f47a781c\\msconvert.exe"
+  msconvert: "D:\\tools\\pwiz-3.0.21209\\msconvert.exe"
 
 
 stasis:
-  url: "https://api.metabolomics.us"
+  url_var: "PROD_STASIS_API_URL"
   api_key_var: "PROD_STASIS_API_TOKEN"
 
 aws:
