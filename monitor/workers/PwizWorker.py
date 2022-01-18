@@ -123,7 +123,7 @@ class PwizWorker(Thread):
         if result.returncode == 0:
             resout = re.search(r'writing output file: (.*?)\n', result.stdout.decode('ascii')).group(1).strip()
 
-            self.pass_sample(extension, file_basename)
+            self.pass_sample(file_basename, extension)
 
             # update tracking status and upload to aws
             logger.info(f'\tAdd {resout} to upload queue')
