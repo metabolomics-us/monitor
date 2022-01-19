@@ -40,8 +40,16 @@ if __name__ == "__main__":
     with open(configFile, 'r') as stream:
         config = yamlconf.load(stream)
 
+    if os.path.exists(config['monitor']['msconvert']):
+        logger.info('Found ProteoWizard')
+    else:
+        logger.info(f"Can't find ProteoWizard at {config['monitor']['msconvert']}")
+        exit(1)
+
     stasis_cli = StasisClient(os.getenv(config['stasis']['url_var'], "https://test-api.metabolomics.us"), 
                               os.getenv(config['stasis']['api_key_var'], "9MjbJRbAtj8spCJJVTPbP3YWc4wjlW0c7AP47Pmi"))
+
+    logger.debug(f'{stasis_cli._url}  --  {stasis_cli._token}')
 
     conv_q = deque([])
     aws_q = deque([])

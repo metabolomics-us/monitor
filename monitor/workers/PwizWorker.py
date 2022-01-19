@@ -109,7 +109,8 @@ class PwizWorker(Thread):
             except Exception as ex:
                 logger.error(f'Skipping conversion of sample {item} -- Error: {str(ex)}')
                 if not self.test:
-                    self.fail_sample(str(item.split(os.sep)[-1]).split('.'))
+                    filename, ext = str(item.split(os.sep)[-1]).split('.')
+                    self.fail_sample(filename, ext)
                 else:
                     logger.error(f'Fake StasisUpdate: Skipping conversion of sample {str(item)} -- Error: {str(ex)}')
                 continue
