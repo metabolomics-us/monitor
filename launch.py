@@ -26,7 +26,14 @@ if __name__ == "__main__":
     parser.add_argument('-t', '--test', action='store_true',
                         help='run in test mode, no data will be converted or sent to aws. This '
                              'overrides the -c option to use \'appconfig-test.yml\'')
+    parser.add_argument('--debug', action='store_true')
+
     args = parser.parse_args()
+
+    if args.debug:
+        logger.remove()
+        logger.add(sys.stderr, format=fmt, level="DEBUG")
+        logger.debug("Running in debug mode")
 
     if args.config:
         configFile = args.config
