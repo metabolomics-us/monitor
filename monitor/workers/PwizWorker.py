@@ -119,11 +119,11 @@ class PwizWorker(Thread):
         logger.info(f'Stopping {self.name}')
 
     def convert(self, extension, file_basename, item):
-        args = self.args
-        args.append(self.update_output(item))
+        args = local()
+        args = ''.join(self.args) + ' ' + self.update_output(item)
 
-        logger.info(f'RUNNING: {[self.runner, item, *args]}')
-        result = subprocess.run([self.runner, item, *args], stdout=subprocess.PIPE, check=True)
+        logger.info(f'RUNNING: {[self.runner, item, args]}')
+        result = subprocess.run(self.runner, item, args.split(', '), stdout=subprocess.PIPE, check=True)
         if result.returncode == 0:
             resout = re.search(r'writing output file: (.*?)\n', result.stdout.decode('ascii')).group(1).strip()
 
@@ -142,8 +142,8 @@ class PwizWorker(Thread):
                 logger.warning(f'Fake StasisUpdate: Conversion of {item} failed')
 
     def fake_convert(self, filename_base, extension, item):
-        args = self.args
-        args.append(self.update_output(item))
+        args = local()
+        args = ', '.join(self.args) + self.update_output(item)
 
         logger.info(f'RUNNING: {[self.runner, item, args]}')
         logger.info(f'Fake StasisUpdate: Converted {item}')
