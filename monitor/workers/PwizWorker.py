@@ -65,7 +65,7 @@ class PwizWorker(Thread):
                 self.wait_for_item(item)
 
                 # replace with regex and list of skip values from config var
-                if any([re.search(x, item, re.IGNORECASE) for x in self.config['skip']]):
+                if any([re.search(x, item, re.IGNORECASE) is not None for x in self.config['skip']]):
                     logger.info(f'Skipping conversion of DNU sample {item}')
                     continue
 
@@ -142,7 +142,10 @@ class PwizWorker(Thread):
                 logger.warning(f'Fake StasisUpdate: Conversion of {item} failed')
 
     def fake_convert(self, filename_base, extension, item):
-        logger.info(f'RUNNING: {[self.runner, item] + self.args}')
+        args = self.args
+        args.append(self.update_output(item))
+
+        logger.info(f'RUNNING: {[self.runner, item, args]}')
         logger.info(f'Fake StasisUpdate: Converted {item}')
         resout = self.storage + filename_base + '.mzml'
 

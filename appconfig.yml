@@ -8,8 +8,6 @@ monitor:
     - ".raw"
     - ".wiff"
     - ".mzml"
-  #  - ".cdf"
-  #  - ".peg"
 
   # regex patterns of samples to skip
   skip:
