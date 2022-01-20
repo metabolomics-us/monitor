@@ -39,6 +39,7 @@ class PwizWorker(Thread):
         self.stasis_cli = st_cli
         self.conversion_q = conversion_q
         self.upload_q = upload_q
+        self.config = config
         self.storage = config['storage'] if config['storage'].endswith(os.path.sep) else config['storage'] + os.path.sep
         self.test = test
         self._lock = Lock()
@@ -64,7 +65,7 @@ class PwizWorker(Thread):
                 self.wait_for_item(item)
 
                 # replace with regex and list of skip values from config var
-                if any([x in item for x in [f'{os.sep}DNU{os.sep}', 'preinj', 'test']]):
+                if any([re.search(x, item, re.IGNORECASE) for x in self.config['skip']]):
                     logger.info(f'Skipping conversion of DNU sample {item}')
                     continue
 

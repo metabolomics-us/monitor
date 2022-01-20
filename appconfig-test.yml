@@ -8,6 +8,16 @@ monitor:
     - ".wiff"
     - ".mzml"
 
+# regex patterns of samples to skip
+  skip:
+    - '\.scan'    # chromatogram data file for wiff format
+    - '\.~idx2'   # secondary file for wiff format
+    - '\\DNU\\'   # DoNotUse folders
+    - '/DNU/'     # DoNotUse folders
+    - 'preinj'    # preinjections
+    - 'prerun'    # preinjections
+    - 'test'      # tests
+
   storage: "d:\\mzml"
   msconvert: "c:\\tools\\pwiz-3.0.20109-5f47a781c\\msconvert.exe"
 

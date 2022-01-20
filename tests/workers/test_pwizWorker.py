@@ -57,7 +57,6 @@ class TestPwizWorker(unittest.TestCase):
         assert 1 == aws_q.qsize()
 
     def test_update_storage(self):
-
         print('creating worker')
         worker = PwizWorker(None, MagicMock(name='stasis_cli_mock'), Queue(), Queue(), self.config['monitor'])
 
@@ -74,10 +73,8 @@ class TestPwizWorker(unittest.TestCase):
 
         for n in good_names:
             res = worker.update_output(n)
-            print(n, res)
             assert 'd:\\lunabkup\\mzml\\mx625118\\' == res
 
         for n in bad_names:
             res = worker.update_output(n)
-            print(n, res)
             assert 'd:\\lunabkup\\mzml\\autoconv\\' == res
