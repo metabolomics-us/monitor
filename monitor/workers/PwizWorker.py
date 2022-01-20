@@ -74,7 +74,7 @@ class PwizWorker(Thread):
                 else:
                     try:
                         if not self.test:
-                            self.convert(extension, file_basename, item)
+                            self.convert(file_basename, extension, item)
                         else:
                             self.fake_convert(file_basename, extension, item)
 
@@ -118,12 +118,13 @@ class PwizWorker(Thread):
             logger.info(f'next task, queue size? {len(self.conversion_q)}')
         logger.info(f'Stopping {self.name}')
 
-    def convert(self, extension, file_basename, item):
-        args = self.args
-        args.append(self.update_output(item))
+    def convert(self, file_basename, extension, item):
+        args = local()
+        storage = self.update_output(item)
+        args = [self.runner, item, *self.args, storage]
 
-        logger.info(f'RUNNING: {[self.runner, item, *args]}')
-        result = subprocess.run([self.runner, item, *args], stdout=subprocess.PIPE, check=True)
+        logger.info(f'RUNNING: {args}')
+        result = subprocess.run(args, stdout=subprocess.PIPE, check=True)
         if result.returncode == 0:
             resout = re.search(r'writing output file: (.*?)\n', result.stdout.decode('ascii')).group(1).strip()
 
@@ -142,12 +143,13 @@ class PwizWorker(Thread):
                 logger.warning(f'Fake StasisUpdate: Conversion of {item} failed')
 
     def fake_convert(self, filename_base, extension, item):
-        args = self.args
-        args.append(self.update_output(item))
+        args = local()
+        storage = self.update_output(item)
+        args = [self.runner, item, *self.args, storage]
 
-        logger.info(f'RUNNING: {[self.runner, item, args]}')
-        logger.info(f'Fake StasisUpdate: Converted {item}')
-        resout = self.storage + filename_base + '.mzml'
+        logger.info(f'RUNNING: {args}')
+        logger.info(f'Fake StasisUpdate: Converted {storage}')
+        resout = storage + filename_base + '.mzml'
 
         os.makedirs(os.path.dirname(resout), exist_ok=True)
         with open(resout, 'w') as d:

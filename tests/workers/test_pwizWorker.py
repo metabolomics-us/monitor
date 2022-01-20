@@ -57,6 +57,7 @@ class TestPwizWorker(unittest.TestCase):
         assert 1 == aws_q.qsize()
 
     def test_update_storage(self):
+
         print('creating worker')
         worker = PwizWorker(None, MagicMock(name='stasis_cli_mock'), Queue(), Queue(), self.config['monitor'])
 
