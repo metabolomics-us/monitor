@@ -60,7 +60,6 @@ class Monitor(Thread):
                     self.conversion_q,
                     self.upload_q,
                     self.config['monitor']['storage'],
-                    self.config['monitor']['msconvert'],
                     self.test,
                     name=f'Converter{x}'
                 )

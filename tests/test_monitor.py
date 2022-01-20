@@ -10,10 +10,10 @@ from queue import Queue
 from threading import Thread
 
 import yamlconf
+from stasis_client.client import StasisClient
 
 from monitor.Bucket import Bucket
 from monitor.Monitor import Monitor
-from rest.stasis.StasisClient import StasisClient
 
 
 class TestMonitorApp(unittest.TestCase):

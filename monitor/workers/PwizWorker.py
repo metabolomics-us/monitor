@@ -31,7 +31,7 @@ class PwizWorker(Thread):
             The path to the msconvert executable
     """
 
-    def __init__(self, parent, st_cli: StasisClient, conversion_q: deque, upload_q: deque, storage, runner,
+    def __init__(self, parent, st_cli: StasisClient, conversion_q: deque, upload_q: deque, config,
                  test=False, name='Converter0', daemon=True):
         super().__init__(name=name, daemon=daemon)
         self.parent = parent
@@ -39,11 +39,11 @@ class PwizWorker(Thread):
         self.stasis_cli = st_cli
         self.conversion_q = conversion_q
         self.upload_q = upload_q
-        self.storage = storage if storage.endswith(os.path.sep) else storage + os.path.sep
+        self.storage = config['storage'] if config['storage'].endswith(os.path.sep) else config['storage'] + os.path.sep
         self.test = test
         self._lock = Lock()
 
-        self.runner = runner
+        self.runner = config['msconvert']
         self.args = ['--mzML', '-e', '.mzml', '--zlib',
                      '--filter', '"peakPicking true 1-"',
                      '--filter', '"zeroSamples removeExtra"',
@@ -60,11 +60,10 @@ class PwizWorker(Thread):
                 item = self.conversion_q.popleft()
                 file_basename, extension = str(item.split(os.sep)[-1]).split('.')
 
-                self.update_output(item)
-
                 logger.info(f'FILE: {item}')
                 self.wait_for_item(item)
 
+                # replace with regex and list of skip values from config var
                 if any([x in item for x in [f'{os.sep}DNU{os.sep}', 'preinj', 'test']]):
                     logger.info(f'Skipping conversion of DNU sample {item}')
                     continue
@@ -119,8 +118,11 @@ class PwizWorker(Thread):
         logger.info(f'Stopping {self.name}')
 
     def convert(self, extension, file_basename, item):
-        logger.info(f'RUNNING: {[self.runner, item, *self.args]}')
-        result = subprocess.run([self.runner, item] + self.args, stdout=subprocess.PIPE, check=True)
+        args = self.args
+        args.append(self.update_output(item))
+
+        logger.info(f'RUNNING: {[self.runner, item, args]}')
+        result = subprocess.run([self.runner, item, args], stdout=subprocess.PIPE, check=True)
         if result.returncode == 0:
             resout = re.search(r'writing output file: (.*?)\n', result.stdout.decode('ascii')).group(1).strip()
 
@@ -158,7 +160,7 @@ class PwizWorker(Thread):
     def get_folder_size2(self, path):
         folder_size = 0
         for (path, dirs, files) in os.walk(path):
-            logger.info(f'\t\tscanning {path}')
+            logger.debug(f'\t\tscanning {path}')
             for file in files:
                 filename = os.path.join(path, file)
                 folder_size += os.path.getsize(filename)
@@ -210,13 +212,15 @@ class PwizWorker(Thread):
                          f'\tResponse: {str(ex)}')
 
     def update_output(self, item):
-        mxid = re.search(r'_(mx\d{6,7})_', item, re.IGNORECASE)
+        mxid = re.search(r'^(mx\d{6,7})_|_(mx\d{6,7})_', item, re.IGNORECASE + re.DOTALL + re.MULTILINE)
 
-        if mxid:
-            storage = self.storage + mxid.group(1).lower() + os.path.sep
+        if mxid and mxid[1] is None:
+            storage = self.storage + mxid[2] + os.path.sep
+        elif mxid and mxid[2] is None:
+            storage = self.storage + mxid[1] + os.path.sep
         else:
             storage = self.storage + 'autoconv' + os.path.sep
-        self.args.append(storage)
 
-        logger.info(f'Storage: {storage}')
+        logger.info(f'\tStorage: {storage.lower()}')
         os.makedirs(storage, exist_ok=True)
+        return storage.lower()
