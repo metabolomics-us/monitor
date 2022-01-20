@@ -59,7 +59,7 @@ class Monitor(Thread):
                     self.stasis_cli,
                     self.conversion_q,
                     self.upload_q,
-                    self.config['monitor']['storage'],
+                    self.config['monitor'],
                     self.test,
                     name=f'Converter{x}'
                 )

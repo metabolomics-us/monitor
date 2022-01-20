@@ -8,18 +8,18 @@ monitor:
     - ".raw"
     - ".wiff"
     - ".mzml"
-#    - ".cdf"
-#    - ".peg"
+  #  - ".cdf"
+  #  - ".peg"
 
-# regex patterns of samples to skip
+  # regex patterns of samples to skip
   skip:
-    - '\.scan'    # chromatogram data file for wiff format
-    - '\.~idx2'   # secondary file for wiff format
-    - '\\DNU\\'   # DoNotUse folders
-    - '/DNU/'     # DoNotUse folders
-    - 'preinj'    # preinjections
-    - 'prerun'    # preinjections
-    - 'test'      # tests
+    - '\.scan'
+    - '\.~idx2'
+    - '\\DNU\\'
+    - '/DNU/'
+    - 'preinj'
+    - 'prerun'
+    - 'test'
 
   storage: "D:\\lunabkup\\mzml"
   msconvert: "D:\\tools\\pwiz-3.0.21209\\msconvert.exe"
