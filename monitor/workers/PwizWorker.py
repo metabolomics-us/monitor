@@ -121,7 +121,7 @@ class PwizWorker(Thread):
     def convert(self, file_basename, extension, item):
         args = local()
         storage = self.update_output(item)
-        args = [self.runner, item, *self.args, storage]
+        args = [self.runner, item, *self.args, storage.lower()]
 
         logger.info(f'RUNNING: {args}')
         result = subprocess.run(args, stdout=subprocess.PIPE, check=True)
@@ -221,12 +221,12 @@ class PwizWorker(Thread):
         mxid = re.search(r'^(mx\d{6,7})_|_(mx\d{6,7})_', item, re.IGNORECASE + re.DOTALL + re.MULTILINE)
 
         if mxid and mxid[1] is None:
-            storage = self.storage + mxid[2] + os.path.sep
+            storage = self.storage + mxid[2].lower() + os.path.sep
         elif mxid and mxid[2] is None:
-            storage = self.storage + mxid[1] + os.path.sep
+            storage = self.storage + mxid[1].lower() + os.path.sep
         else:
             storage = self.storage + 'autoconv' + os.path.sep
 
-        logger.info(f'\tStorage: {storage.lower()}')
+        logger.info(f'\tStorage: {storage}')
         os.makedirs(storage, exist_ok=True)
-        return storage.lower()
+        return storage
