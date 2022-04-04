@@ -1,7 +1,7 @@
 import os
 import shutil
 import unittest
-from queue import Queue
+from collections import deque
 
 import yamlconf
 from mock import MagicMock
@@ -32,8 +32,8 @@ class TestPwizWorker(unittest.TestCase):
         st_cli.return_value.add_tracking.return_value = True
 
         print('creating queues')
-        cnv_q = Queue()
-        aws_q = Queue()
+        cnv_q = deque()
+        aws_q = deque()
 
         print('creating worker')
         worker = PwizWorker(None, st_cli, cnv_q, aws_q, self.config['monitor'])
@@ -59,7 +59,7 @@ class TestPwizWorker(unittest.TestCase):
     def test_update_storage(self):
 
         print('creating worker')
-        worker = PwizWorker(None, MagicMock(name='stasis_cli_mock'), Queue(), Queue(), self.config['monitor'])
+        worker = PwizWorker(None, MagicMock(name='stasis_cli_mock'), deque(), deque(), self.config['monitor'])
 
         good_names = [
             'SantanaSerum031_MX625118_posCSH_CMS-21-2-H2S-Serum-035.d',
