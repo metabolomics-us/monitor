@@ -46,7 +46,7 @@ class BucketWorker(Thread):
                 item = self.upload_q.popleft()
 
                 logger.info(f'Sending ({item}) {os.path.getsize(item)} bytes to aws')
-                file_basename, extension = str(item.split(os.sep)[-1]).split('.')
+                file_basename, extension = str(item.split(os.sep)[-1]).rsplit('.', 1)
 
                 if not self.test:
                     if self.bucket.save(item):
@@ -69,7 +69,7 @@ class BucketWorker(Thread):
             except Exception as ex:
                 logger.error(f'Error uploading sample {item}: {str(ex)}')
                 if not self.test:
-                    fname, ext = str(item.split(os.sep)[-1]).split('.')
+                    fname, ext = str(item.split(os.sep)[-1]).rsplit('.', 1)
                     self.fail_sample(fname, ext)
                 else:
                     logger.info(f'Fake StasisUpdate: Error uploading sample {item}: {str(ex)}')
