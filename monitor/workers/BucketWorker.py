@@ -10,6 +10,7 @@ from loguru import logger
 from stasis_client.client import StasisClient
 
 from monitor.Bucket import Bucket
+from monitor.workers.Scheduler import Scheduler
 
 
 class BucketWorker(Thread):
@@ -25,8 +26,8 @@ class BucketWorker(Thread):
             A path for storing converted mzml files
     """
 
-    def __init__(self, parent, stasis: StasisClient, bucket_name, up_q: deque, storage, test=False,
-                 name='Uploader0', daemon=True):
+    def __init__(self, parent, stasis: StasisClient, bucket_name, up_q: deque, storage, test: bool = False,
+                 name='Uploader0', daemon=True, schedule: bool = False):
         super().__init__(name=name, daemon=daemon)
         self.parent = parent
         self.bucket = Bucket(bucket_name)
@@ -35,6 +36,7 @@ class BucketWorker(Thread):
         self.stasis_cli = stasis
         self.storage = storage
         self.test = test
+        self.schedule = schedule
 
     def run(self):
         """Starts the Uploader Worker"""
@@ -51,6 +53,10 @@ class BucketWorker(Thread):
                 if not self.test:
                     if self.bucket.save(item):
                         logger.info(f'File {item} saved to {self.bucket.bucket_name}')
+
+                        if self.schedule:
+                            Scheduler.schedule_sample(file_basename)
+
                     else:
                         self.fail_sample(file_basename, extension)
                 else:

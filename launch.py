@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import argparse
+import json
 import os
 import sys
 from collections import deque
@@ -26,6 +27,8 @@ if __name__ == "__main__":
     parser.add_argument('-t', '--test', action='store_true',
                         help='run in test mode, no data will be converted or sent to aws. This '
                              'overrides the -c option to use \'appconfig-test.yml\'')
+    parser.add_argument('-s', '--schedule', action='store_true', default=False,
+                        help='schedules the sample to be processed by lc-binbase')
     parser.add_argument('--debug', action='store_true')
 
     args = parser.parse_args()
@@ -46,14 +49,16 @@ if __name__ == "__main__":
 
     with open(configFile, 'r') as stream:
         config = yamlconf.load(stream)
+        if args.debug:
+            logger.debug('Configuration: ' + json.dumps(config, indent=2))
 
     if os.path.exists(config['monitor']['msconvert']):
         logger.info('Found ProteoWizard')
     else:
-        logger.info(f"Can't find ProteoWizard at {config['monitor']['msconvert']}")
+        logger.error(f"Can't find ProteoWizard at {config['monitor']['msconvert']}")
         exit(1)
 
-    stasis_cli = StasisClient(os.getenv(config['stasis']['url_var'], "https://test-api.metabolomics.us"), 
+    stasis_cli = StasisClient(os.getenv(config['stasis']['url_var'], "https://test-api.metabolomics.us"),
                               os.getenv(config['stasis']['api_key_var'], "9MjbJRbAtj8spCJJVTPbP3YWc4wjlW0c7AP47Pmi"))
 
     logger.debug(f'{stasis_cli._url}  --  {stasis_cli._token}')

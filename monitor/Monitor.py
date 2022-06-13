@@ -49,7 +49,8 @@ class Monitor(Thread):
                                       self.config['aws']['bucketName'],
                                       self.upload_q,
                                       self.config['monitor']['storage'],
-                                      self.test)
+                                      self.test,
+                                      schedule=self.config['aws']['schedule'])
             threads = [aws_worker]
 
             # Setup the pwiz workers

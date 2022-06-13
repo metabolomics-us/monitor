@@ -27,3 +27,4 @@ stasis:
 
 aws:
   bucketName: "data-carrot"
+  schedule: false
