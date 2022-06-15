@@ -1,3 +1,7 @@
+from collections import deque
+from threading import Thread
+from time import sleep
+
 from cisclient.client import CISClient
 from cisclient.exceptions import CisClientException
 from loguru import logger
@@ -6,10 +10,61 @@ from stasis_client.client import StasisClient
 from monitor.exceptions import NoProfileException
 
 
-class Scheduler:
-    def __init__(self, stasis_cli: StasisClient, cis_cli: CISClient):
-        self.stasis_cli = stasis_cli
-        self.cis_cli = cis_cli
+class Scheduler(Thread):
+    """Worker class that schedules samples for preprocessing on AWS
+
+    Parameters
+    ----------
+        sched_q: Queue
+            A queue that contains the filenames to be scheduled
+    """
+
+    def __init__(self, parent, stasis: StasisClient, cis: CISClient,
+                 sched_q: deque, test: bool = False,
+                 name='Scheduler0', daemon=True, schedule: bool = False):
+        super().__init__(name=name, daemon=daemon)
+        self.parent = parent
+        self.stasis_cli = stasis
+        self.cis_cli = cis
+        self.schedule_q = sched_q
+        self.running = False
+        self.schedule = schedule
+        self.test = test
+
+    def run(self):
+        item = None
+        self.running = True
+
+        while self.running:
+            try:
+                item = self.schedule_q.popleft()
+
+                if self.test:
+                    logger.info(f'Fake Scheduling sample with id {item}')
+                else:
+                    logger.info(f'Scheduling sample with id {item}')
+
+                    job = self.schedule_sample(item)
+
+                    if job:
+                        logger.info(f'Schedule successful. Job id {job["job"]}')
+
+            except KeyboardInterrupt:
+                logger.warning(f'Stopping SchedulerWorker {self.name}')
+                self.running = False
+                self.parent.join_threads()
+                continue
+
+            except IndexError:
+                sleep(1)
+                continue
+
+            except Exception as ex:
+                logger.error(f'Error scheduling sample {item}: {ex.args}')
+                continue
+
+            logger.info(f'Scheduler queue size: {len(self.schedule_q)}')
+        logger.info(f'Stopping {self.name}')
 
     def schedule_sample(self, sample_id):
         try:
@@ -45,7 +100,7 @@ class Scheduler:
             logger.error(f'Error gathering sample data: {ex.args}')
             return
 
-        job = {'id': f'preprocess_{sample_id}',     # in case we need more uniqueness: {time.strftime("%Y%m%d-%H%M%S")}_
+        job = {'id': f'preprocess_{sample_id}',  # in case we need more uniqueness: {time.strftime("%Y%m%d-%H%M%S")}_
                'method': method,
                'profile': profiles,
                'samples': [sample_id]

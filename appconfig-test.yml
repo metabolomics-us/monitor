@@ -21,6 +21,10 @@ monitor:
   storage: "d:\\mzml"
   msconvert: "c:\\tools\\pwiz-3.0.21209\\msconvert.exe"
 
+cis:
+  url_var: "TEST_CIS_API_URL"
+  api_key_var: "TEST_CIS_API_TOKEN"
+
 stasis:
   url_var: "TEST_STASIS_API_URL"
   api_key_var: "TEST_STASIS_API_TOKEN"

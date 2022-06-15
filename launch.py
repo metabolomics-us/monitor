@@ -8,6 +8,7 @@ import sys
 from collections import deque
 
 import yamlconf
+from cisclient.client import CISClient
 from loguru import logger
 from stasis_client.client import StasisClient
 
@@ -17,7 +18,6 @@ logger.remove()
 fmt = "<level>{level: <8}</level> | <g>{time:YYYY-MM-DD hh:mm:ss}</g> | <m>{thread.name: <10}</m> | " \
       "<c>{file: <20} [line:{line: ^3}] {function: <20}</c> | {message}"
 logger.add(sys.stderr, format=fmt, level="INFO")
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -49,8 +49,8 @@ if __name__ == "__main__":
 
     with open(configFile, 'r') as stream:
         config = yamlconf.load(stream)
-        if args.schedule:
-            config['aws']['schedule'] = True
+        config['schedule'] = args.schedule
+        config['test'] = args.test
 
         if args.debug:
             logger.debug('Configuration: ' + json.dumps(config, indent=2))
@@ -61,12 +61,16 @@ if __name__ == "__main__":
         logger.error(f"Can't find ProteoWizard at {config['monitor']['msconvert']}")
         exit(1)
 
-    stasis_cli = StasisClient(os.getenv(config['stasis']['url_var'], "https://test-api.metabolomics.us"),
+    stasis_cli = StasisClient(os.getenv(config['stasis']['url_var'], "https://test-api.metabolomics.us/stasis"),
                               os.getenv(config['stasis']['api_key_var'], "9MjbJRbAtj8spCJJVTPbP3YWc4wjlW0c7AP47Pmi"))
+    cis_cli = CISClient(os.getenv(config['cis']['url_var'], "https://test-api.metabolomics.us/cis"),
+                        os.getenv(config['cis']['api_key_var'], "9MjbJRbAtj8spCJJVTPbP3YWc4wjlW0c7AP47Pmi"))
 
-    logger.debug(f'{stasis_cli._url}  --  {stasis_cli._token}')
+    logger.debug(f'Stasis Client: {stasis_cli._url}  --  {stasis_cli._token}')
+    logger.debug(f'Cis Client:    {cis_cli._url}     --  {cis_cli._token}')
 
     conv_q = deque([])
     aws_q = deque([])
+    sched_q = deque([])
 
-    Monitor(config, stasis_cli, conv_q, aws_q, test=args.test).run()
+    Monitor(config, stasis_cli, cis_cli, conv_q, aws_q, sched_q).run()

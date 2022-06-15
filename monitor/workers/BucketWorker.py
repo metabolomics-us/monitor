@@ -6,12 +6,10 @@ import time
 from collections import deque
 from threading import Thread
 
-from cisclient.client import CISClient
 from loguru import logger
 from stasis_client.client import StasisClient
 
 from monitor.Bucket import Bucket
-from monitor.workers.Scheduler import Scheduler
 
 
 class BucketWorker(Thread):
@@ -27,18 +25,18 @@ class BucketWorker(Thread):
             A path for storing converted mzml files
     """
 
-    def __init__(self, parent, stasis: StasisClient, bucket_name, up_q: deque, storage, test: bool = False,
-                 name='Uploader0', daemon=True, schedule: bool = False):
+    def __init__(self, parent, stasis: StasisClient, bucket_name,
+                 up_q: deque, storage, sched_q: deque,
+                 test: bool = False, name='Uploader0', daemon=True):
         super().__init__(name=name, daemon=daemon)
         self.parent = parent
         self.bucket = Bucket(bucket_name)
         self.upload_q = up_q
+        self.schedule_q = sched_q
         self.running = False
         self.stasis_cli = stasis
         self.storage = storage
         self.test = test
-        self.schedule = schedule
-        self.scheduler = Scheduler(self.stasis_cli, CISClient())
 
     def run(self):
         """Starts the Uploader Worker"""
@@ -55,25 +53,12 @@ class BucketWorker(Thread):
                 if not self.test:
                     if self.bucket.save(item):
                         logger.info(f'File {item} saved to {self.bucket.bucket_name}')
-
-                        if self.schedule:
-                            logger.info(f'Scheduling Scheduling sample with id {file_basename}')
-
-                            job = self.scheduler.schedule_sample(file_basename)
-                            if job:
-                                logger.info(f'Schedule successful. Job id {job["job"]}')
-
                     else:
                         self.fail_sample(file_basename, extension)
                 else:
                     logger.info(f'Fake StasisUpdate: Uploaded {item} to {self.bucket.bucket_name}')
 
-                    if self.schedule:
-                        logger.info(f'Scheduling sample with id {file_basename}')
-
-                        job = self.scheduler.schedule_sample(file_basename)
-                        if job:
-                            logger.info(f'Schedule successful. Job id {job["job"]}')
+                self.schedule_q.append(file_basename)
 
             except KeyboardInterrupt:
                 logger.warning(f'Stopping UploaderWorker {self.name}')
@@ -94,7 +79,7 @@ class BucketWorker(Thread):
                     logger.info(f'Fake StasisUpdate: Error uploading sample {item}: {str(ex)}')
                 continue
 
-            logger.info(f'next task, queue size: {len(self.upload_q)}')
+            logger.info(f'Uploader queue size: {len(self.upload_q)}')
         logger.info(f'Stopping {self.name}')
 
     def fail_sample(self, file_basename, extension):

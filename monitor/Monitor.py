@@ -4,6 +4,7 @@ import time
 from collections import deque
 from threading import Thread
 
+from cisclient.client import CISClient
 from loguru import logger
 from stasis_client.client import StasisClient
 from watchdog.observers import Observer
@@ -11,6 +12,7 @@ from watchdog.observers import Observer
 from monitor.RawDataEventHandler import RawDataEventHandler
 from monitor.workers.BucketWorker import BucketWorker
 from monitor.workers.PwizWorker import PwizWorker
+from monitor.workers.Scheduler import Scheduler
 
 THREAD_TIMEOUT = 1
 
@@ -28,12 +30,16 @@ class Monitor(Thread):
             A client class to the DataFormer rest API
     """
 
-    def __init__(self, config, stasis_cli: StasisClient, conv_q: deque, aws_q: deque, test=False, daemon=False):
+    def __init__(self, config, stasis_cli: StasisClient, cis_cli: CISClient,
+                 conv_q: deque, aws_q: deque, sched_q: deque,
+                 test=False, daemon=False):
         super().__init__(name='Monitor', daemon=daemon)
         self.config = config
         self.stasis_cli = stasis_cli
+        self.cis_cli = cis_cli
         self.conversion_q = conv_q
         self.upload_q = aws_q
+        self.schedule_q = sched_q
         self.running = True
         self.test = test
         self.threads = []
@@ -49,9 +55,17 @@ class Monitor(Thread):
                                       self.config['aws']['bucketName'],
                                       self.upload_q,
                                       self.config['monitor']['storage'],
-                                      self.test,
-                                      schedule=self.config['aws']['schedule'])
-            threads = [aws_worker]
+                                      self.schedule_q,
+                                      self.config['test'])
+
+            scheduler = Scheduler(self,
+                                  self.stasis_cli,
+                                  self.cis_cli,
+                                  self.schedule_q,
+                                  test=self.config['test'],
+                                  schedule=self.config['schedule'])
+
+            threads = [aws_worker, scheduler]
 
             # Setup the pwiz workers
             [threads.append(
@@ -61,7 +75,7 @@ class Monitor(Thread):
                     self.conversion_q,
                     self.upload_q,
                     self.config['monitor'],
-                    self.test,
+                    test=self.config['test'],
                     name=f'Converter{x}'
                 )
             ) for x in range(0, 5)]
@@ -75,7 +89,7 @@ class Monitor(Thread):
                 self.conversion_q,
                 self.upload_q,
                 self.config['monitor']['extensions'],
-                self.test
+                test=self.config['test']
             )
 
             for p in self.config['monitor']['paths']:
@@ -97,6 +111,7 @@ class Monitor(Thread):
             logger.info('\tMonitor closing queues and threads')
             self.conversion_q.clear()
             self.upload_q.clear()
+            self.schedule_q.clear()
             self.join_threads()
             observer.stop()
             observer.join()
