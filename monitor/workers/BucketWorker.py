@@ -6,6 +6,7 @@ import time
 from collections import deque
 from threading import Thread
 
+from cisclient.client import CISClient
 from loguru import logger
 from stasis_client.client import StasisClient
 
@@ -37,6 +38,7 @@ class BucketWorker(Thread):
         self.storage = storage
         self.test = test
         self.schedule = schedule
+        self.scheduler = Scheduler(self.stasis_cli, CISClient())
 
     def run(self):
         """Starts the Uploader Worker"""
@@ -55,12 +57,23 @@ class BucketWorker(Thread):
                         logger.info(f'File {item} saved to {self.bucket.bucket_name}')
 
                         if self.schedule:
-                            Scheduler.schedule_sample(file_basename)
+                            logger.info(f'Scheduling Scheduling sample with id {file_basename}')
+
+                            job = self.scheduler.schedule_sample(file_basename)
+                            if job:
+                                logger.info(f'Schedule successful. Job id {job["job"]}')
 
                     else:
                         self.fail_sample(file_basename, extension)
                 else:
                     logger.info(f'Fake StasisUpdate: Uploaded {item} to {self.bucket.bucket_name}')
+
+                    if self.schedule:
+                        logger.info(f'Scheduling sample with id {file_basename}')
+
+                        job = self.scheduler.schedule_sample(file_basename)
+                        if job:
+                            logger.info(f'Schedule successful. Job id {job["job"]}')
 
             except KeyboardInterrupt:
                 logger.warning(f'Stopping UploaderWorker {self.name}')

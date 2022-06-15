@@ -20,7 +20,7 @@ monitor:
     - 'test'
 
   storage: "D:\\lunabkup\\mzml"
-  msconvert: "D:\\tools\\pwiz-3.0.21209\\msconvert.exe"
+  msconvert: "C:\\tools\\pwiz-3.0.21209\\msconvert.exe"
 
 
 stasis:

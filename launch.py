@@ -49,6 +49,9 @@ if __name__ == "__main__":
 
     with open(configFile, 'r') as stream:
         config = yamlconf.load(stream)
+        if args.schedule:
+            config['aws']['schedule'] = True
+
         if args.debug:
             logger.debug('Configuration: ' + json.dumps(config, indent=2))
 
