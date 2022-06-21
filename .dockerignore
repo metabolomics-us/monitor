@@ -1,0 +1,10 @@
+.pytest_cache/
+Monitor.egg- info/
+venv/
+tests/
+resources/
+
+**/docker/*.ps1
+
+.dockerignore
+Dockerfile

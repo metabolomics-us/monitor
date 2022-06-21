@@ -26,8 +26,8 @@ class Monitor(Thread):
             A yaml application configuration file loaded with yamlconf
         stasis_cli: StasisClient
             A client class to the Stasis rest API
-        dataform_cli: DataformerClient
-            A client class to the DataFormer rest API
+        cis_cli: CISClient
+            A client class to the Cis rest API
     """
 
     def __init__(self, config, stasis_cli: StasisClient, cis_cli: CISClient,
