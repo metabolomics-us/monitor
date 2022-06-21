@@ -55,6 +55,15 @@ NOTE: It is suggested to use a 'service wrapper' (like [nssm][1]) to run this ap
 
 ## Docker
 
+### Requirements
+
+Please download and save in 'docker' folder the following files:
+
+- pwiz-3.0.21209.zip
+- MinGit-2.32.0-64-bit.zip
+
+### Installation
+
 The docker folder contains a Dockerfile to build an image that can run the application.
 Currently pip has issues cloning some git dependencies needed for the proper running of the monitor.
 
@@ -62,4 +71,4 @@ Currently pip has issues cloning some git dependencies needed for the proper run
 
 This module was written by Diego Pedrosa.
 
-[1]: <https://nssm.cc/>
+[1]: <http://nssm.cc/>
