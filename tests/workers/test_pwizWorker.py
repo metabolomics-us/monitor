@@ -1,7 +1,6 @@
 import os
-import shutil
 import unittest
-from collections import deque
+from queue import Queue
 
 import yamlconf
 from mock import MagicMock
@@ -17,49 +16,50 @@ class TestPwizWorker(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         with open(os.path.join(os.path.dirname(__file__), '..', '..',
-                               'appconfig.yml'), 'r') as conf:
+                               'appconfig-test.yml'), 'r') as conf:
             cls.config = yamlconf.load(conf)
 
     @classmethod
     def tearDownClass(cls):
         filename = str(cls.agi_file.split(os.sep)[-1]).split('.')[0]
-        test_file = os.path.join(cls.config['monitor']['storage'], '%s.mzml' % filename)
-        if (os.path.exists(test_file)):
-            shutil.rmtree(os.path.join(os.path.dirname(__file__), 'tmp'))
+        test_file = os.path.join(cls.config['monitor']['storage'], 'autoconv', f'{filename}.mzml')
+        if os.path.exists(test_file):
+            os.remove(test_file)
 
     def test_pwizWorker(self):
         st_cli = MagicMock(name='stasis_cli_mock')
         st_cli.return_value.add_tracking.return_value = True
 
-        print('creating queues')
-        cnv_q = deque()
-        aws_q = deque()
+        print('creating queues', flush=True)
+        cnv_q = Queue()
+        aws_q = Queue()
 
-        print('creating worker')
-        worker = PwizWorker(None, st_cli, cnv_q, aws_q, self.config['monitor'])
+        print('creating worker', flush=True)
+        worker = PwizWorker(None, st_cli, cnv_q, aws_q, self.config['monitor'], test=False)
 
         worker.start()
 
         # should be skipped and
-        print('adding bad file')
-        cnv_q.put('bad_file.d')
+        print('adding bad file', flush=True)
+        cnv_q.put_nowait('d:\\data\\DNU\\bad_file.d')
 
-        print('adding good file')
+        print('adding good file', flush=True)
         # process next valid item in queue
-        cnv_q.put(self.agi_file)
+        cnv_q.put_nowait('d:\\data\\monitored.d')
 
-        print('closing queue')
-        cnv_q.join()
+        worker.join(timeout=10)
 
         filename = str(self.agi_file.split(os.sep)[-1]).split('.')[0]
-        test_file = os.path.join(os.path.dirname(__file__), 'tmp', '%s.mzml' % filename)
+        test_file = os.path.join(self.config['monitor']['storage'], 'autoconv', f'{filename}.mzml')
+
         assert os.path.exists(test_file)
         assert 1 == aws_q.qsize()
 
+
     def test_update_storage(self):
 
-        print('creating worker')
-        worker = PwizWorker(None, MagicMock(name='stasis_cli_mock'), deque(), deque(), self.config['monitor'])
+        print('creating worker', flush=True)
+        worker = PwizWorker(None, MagicMock(name='stasis_cli_mock'), Queue(), Queue(), self.config['monitor'])
 
         good_names = [
             'SantanaSerum031_MX625118_posCSH_CMS-21-2-H2S-Serum-035.d',
@@ -74,8 +74,8 @@ class TestPwizWorker(unittest.TestCase):
 
         for n in good_names:
             res = worker.update_output(n)
-            assert 'd:\\lunabkup\\mzml\\mx625118\\' == res
+            assert 'd:\\mzml\\mx625118\\' == res.lower()
 
         for n in bad_names:
             res = worker.update_output(n)
-            assert 'd:\\lunabkup\\mzml\\autoconv\\' == res
+            assert 'd:\\mzml\\autoconv\\' == res.lower()

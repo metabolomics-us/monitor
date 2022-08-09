@@ -30,7 +30,7 @@ class TestFillMyBucketWorker(unittest.TestCase):
         filename = test_file.split(os.sep)[-1]
 
         bucket = Bucket('data-carrot')
-        worker = BucketWorker(st_cli, 'data-carrot', upload_q, self.config['monitor']['storage'])
+        worker = BucketWorker(None, st_cli, 'data-carrot', upload_q, self.config['monitor']['storage'], Queue())
         bucket.delete(filename)
         assert not bucket.exists(filename)
 
@@ -39,7 +39,7 @@ class TestFillMyBucketWorker(unittest.TestCase):
         # process next valid item in queue
         upload_q.put(test_file)
 
-        upload_q.join()
+        worker.join(timeout=10)
 
         assert bucket.exists(filename)
         bucket.delete(filename)

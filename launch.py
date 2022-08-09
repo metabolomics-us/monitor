@@ -5,7 +5,7 @@ import argparse
 import json
 import os
 import sys
-from collections import deque
+from queue import Queue
 
 import yamlconf
 from cisclient.client import CISClient
@@ -69,8 +69,8 @@ if __name__ == "__main__":
     logger.debug(f'Stasis Client: {stasis_cli._url}  --  {stasis_cli._token}')
     logger.debug(f'Cis Client:    {cis_cli._url}     --  {cis_cli._token}')
 
-    conv_q = deque([])
-    aws_q = deque([])
-    sched_q = deque([])
+    conv_q = Queue()
+    aws_q = Queue()
+    sched_q = Queue()
 
     Monitor(config, stasis_cli, cis_cli, conv_q, aws_q, sched_q).run()

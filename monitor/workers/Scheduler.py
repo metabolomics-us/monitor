@@ -1,4 +1,4 @@
-from collections import deque
+from queue import Queue
 from threading import Thread
 from time import sleep
 
@@ -20,7 +20,7 @@ class Scheduler(Thread):
     """
 
     def __init__(self, parent, stasis: StasisClient, cis: CISClient,
-                 sched_q: deque, test: bool = False,
+                 sched_q: Queue, test: bool = False,
                  name='Scheduler0', daemon=True, schedule: bool = False):
         super().__init__(name=name, daemon=daemon)
         self.parent = parent
@@ -37,7 +37,7 @@ class Scheduler(Thread):
 
         while self.running:
             try:
-                item = self.schedule_q.popleft()
+                item = self.schedule_q.get()
 
                 if self.test:
                     logger.info(f'Fake Scheduling sample with id {item}')
@@ -50,25 +50,28 @@ class Scheduler(Thread):
                         logger.info(f'Schedule successful. Job id {job["job"]}')
 
             except KeyboardInterrupt:
-                logger.warning(f'Stopping SchedulerWorker {self.name}')
+                logger.warning(f'Stopping {self.name} due to Control+C')
                 self.running = False
+                self.schedule_q.queue.clear()
+                self.schedule_q.join()
                 self.parent.join_threads()
-                continue
 
             except IndexError:
                 sleep(1)
-                continue
 
             except Exception as ex:
                 logger.error(f'Error scheduling sample {item}: {ex.args}')
-                continue
 
-            logger.info(f'Scheduler queue size: {len(self.schedule_q)}')
+            finally:
+                self.schedule_q.task_done()
+                logger.info(f'Scheduler queue size: {self.schedule_q.qsize()}')
+
         logger.info(f'Stopping {self.name}')
+        self.join()
 
     def schedule_sample(self, sample_id):
         try:
-            # get sample data
+            # get sample data.
             sample_data = self.stasis_cli.sample_acquisition_get(sample_id)
         except Exception as ex:
             logger.error(f"Can't get sample '{sample_id}' metadata.\nStasisClient error: {ex.args}")
@@ -100,11 +103,12 @@ class Scheduler(Thread):
             logger.error(f'Error gathering sample data: {ex.args}')
             return
 
-        job = {'id': f'preprocess_{sample_id}',  # in case we need more uniqueness: {time.strftime("%Y%m%d-%H%M%S")}_
-               'method': method,
-               'profile': profiles,
-               'samples': [sample_id]
-               }
+        job = {
+            'id': f'preprocess_{sample_id}',  # in case we need more uniqueness: {time.strftime("%Y%m%d-%H%M%S")}_
+            'method': method,
+            'profile': profiles,
+            'samples': [sample_id]
+        }
 
         try:
             logger.debug('storing job...')

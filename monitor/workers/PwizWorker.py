@@ -5,9 +5,9 @@ import os
 import re
 import subprocess
 import time
-from collections import deque
 from os.path import getsize, join
 from pathlib import Path
+from queue import Queue
 from threading import Thread, Lock, local
 
 from loguru import logger
@@ -31,7 +31,7 @@ class PwizWorker(Thread):
             The path to the msconvert executable
     """
 
-    def __init__(self, parent, st_cli: StasisClient, conversion_q: deque, upload_q: deque, config,
+    def __init__(self, parent, st_cli: StasisClient, conversion_q: Queue, upload_q: Queue, config,
                  test=False, name='Converter0', daemon=True):
         super().__init__(name=name, daemon=daemon)
         self.parent = parent
@@ -58,19 +58,19 @@ class PwizWorker(Thread):
 
         while self.running:
             try:
-                item = self.conversion_q.popleft()
+                item = self.conversion_q.get()
                 file_basename, extension = str(item.split(os.sep)[-1]).split('.')
+
+                # replace with regex and list of skip values from config var
+                if any([re.search(x, item) is not None for x in self.config['skip']]):
+                    logger.info(f'Skipping conversion of DNU sample {item}')
+                    continue
 
                 logger.info(f'FILE: {item}')
                 self.wait_for_item(item)
 
-                # replace with regex and list of skip values from config var
-                if any([re.search(x, item, re.IGNORECASE) is not None for x in self.config['skip']]):
-                    logger.info(f'Skipping conversion of DNU sample {item}')
-                    continue
-
                 if item.endswith('.mzml'):
-                    self.upload_q.append(item)
+                    self.upload_q.put_nowait(item)
                 else:
                     try:
                         if not self.test:
@@ -95,16 +95,18 @@ class PwizWorker(Thread):
                                           'output': cpe.output,
                                           'stdout': cpe.stdout,
                                           'stderr': cpe.stderr})
-                        continue
 
             except KeyboardInterrupt:
                 logger.warning(f'Stopping {self.name} due to Control+C')
                 self.running = False
+                self.conversion_q.queue.clear()
+                self.upload_q.queue.clear()
+                self.conversion_q.join()
+                self.upload_q.join()
                 self.parent.join_threads()
 
             except IndexError:
                 time.sleep(1)
-                continue
 
             except Exception as ex:
                 logger.error(f'Skipping conversion of sample {item} -- Error: {str(ex)}')
@@ -113,10 +115,13 @@ class PwizWorker(Thread):
                     self.fail_sample(filename, ext)
                 else:
                     logger.error(f'Fake StasisUpdate: Skipping conversion of sample {str(item)} -- Error: {str(ex)}')
-                continue
 
-            logger.info(f'next task, queue size? {len(self.conversion_q)}')
-        logger.info(f'Stopping {self.name}')
+            finally:
+                self.conversion_q.task_done()
+                logger.info(f'Conversion queue size: {self.conversion_q.qsize()}')
+
+        logger.info(f'\tStopping {self.name}')
+        self.join()
 
     def convert(self, file_basename, extension, item):
         args = local()
@@ -132,7 +137,7 @@ class PwizWorker(Thread):
 
             # update tracking status and upload to aws
             logger.info(f'\tAdd {resout} to upload queue')
-            self.upload_q.append(resout)
+            self.upload_q.put_nowait(resout)
 
         else:
             # update tracking status
@@ -158,7 +163,7 @@ class PwizWorker(Thread):
         time.sleep(1)
 
         logger.info(f'Added {resout} to upload queue')
-        self.upload_q.append(resout)
+        self.upload_q.put_nowait(resout)
 
     def get_file_size(self, path):
         return os.stat(path).st_size
@@ -187,14 +192,24 @@ class PwizWorker(Thread):
         return my_size
 
     def wait_for_item(self, path):
-        """Waits for a file or folder to be fully updated"""
-        size = 0
-        curr = 0
+        """Waits for a file or folder to be fully updated checking it's size"""
+        size = -1
+        curr = self.get_folder_size4(path) if os.path.isdir(path) else self.get_file_size(path)
+        print(f'INITIAL: size={size} -- current={curr}')
+
         c = 0
-        while size <= curr:
+        while size < curr:
+            if path.endswith('.d'):
+                if self.test:
+                    time.sleep(5)
+                else:
+                    time.sleep(3)
+            else:
+                time.sleep(1)
             size = curr
-            time.sleep(0.5)
             curr = self.get_folder_size4(path) if os.path.isdir(path) else self.get_file_size(path)
+            print(f'AFTER SLEEP: size={size} -- current={curr}')
+
             if size == curr and c < 5:
                 c += 1
             elif c == 5:

@@ -12,8 +12,8 @@ monitor:
   skip:
     - '\.scan'
     - '\.~idx2'
-    - '\\DNU(?:.*)?'
-    - '/DNU(?:.*)?'
+    - '\\DNU(?:.*)?\\'
+    - '/DNU(?:.*)?/'
     - 'preinj'
     - 'prerun'
     - 'test'

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from collections import deque
+from multiprocessing.queues import Queue
 
 from stasis_client.client import StasisClient
 from watchdog.events import RegexMatchingEventHandler
@@ -25,7 +25,7 @@ class RawDataEventHandler(RegexMatchingEventHandler):
             A boolean indicating test run when True
     """
 
-    def __init__(self, st_cli: StasisClient, conversion_q: deque, upload_q: deque, extensions, test: bool = False):
+    def __init__(self, st_cli: StasisClient, conversion_q: Queue, upload_q: Queue, extensions, test: bool = False):
         super().__init__(regexes=[FOLDERS_RX, FILES_RX])
         self.stasis_cli = st_cli
         self.conversion_q = conversion_q
@@ -34,7 +34,7 @@ class RawDataEventHandler(RegexMatchingEventHandler):
         self.test = test
 
     def on_created(self, event):
-        self.conversion_q.append(event.src_path)
+        self.conversion_q.put_nowait(event.src_path)
 
     def on_moved(self, event):
-        self.conversion_q.append(event.dest_path)
+        self.conversion_q.put_nowait(event.dest_path)

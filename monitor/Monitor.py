@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import time
-from collections import deque
+from queue import Queue
 from threading import Thread
 
 from cisclient.client import CISClient
@@ -14,7 +14,7 @@ from monitor.workers.BucketWorker import BucketWorker
 from monitor.workers.PwizWorker import PwizWorker
 from monitor.workers.Scheduler import Scheduler
 
-THREAD_TIMEOUT = 1
+THREAD_TIMEOUT = 5
 
 
 class Monitor(Thread):
@@ -31,7 +31,7 @@ class Monitor(Thread):
     """
 
     def __init__(self, config, stasis_cli: StasisClient, cis_cli: CISClient,
-                 conv_q: deque, aws_q: deque, sched_q: deque,
+                 conv_q: Queue, aws_q: Queue, sched_q: Queue,
                  test=False, daemon=False):
         super().__init__(name='Monitor', daemon=daemon)
         self.config = config
@@ -56,7 +56,8 @@ class Monitor(Thread):
                                       self.upload_q,
                                       self.config['monitor']['storage'],
                                       self.schedule_q,
-                                      self.config['test'])
+                                      self.config['test'],
+                                      schedule=self.config['schedule'])
 
             scheduler = Scheduler(self,
                                   self.stasis_cli,
@@ -109,12 +110,16 @@ class Monitor(Thread):
 
         finally:
             logger.info('\tMonitor closing queues and threads')
-            self.conversion_q.clear()
-            self.upload_q.clear()
-            self.schedule_q.clear()
-            self.join_threads()
+            observer.unschedule_all()
             observer.stop()
-            observer.join()
+            observer.join(THREAD_TIMEOUT)
+            self.conversion_q.queue.clear()
+            self.upload_q.queue.clear()
+            self.schedule_q.queue.clear()
+            self.conversion_q.join()
+            self.upload_q.join()
+            self.schedule_q.join()
+            self.join_threads()
 
     def join_threads(self):
         for t in self.threads:

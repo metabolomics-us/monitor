@@ -1,4 +1,5 @@
 import os
+from queue import Queue
 
 import pytest
 from cisclient.client import CISClient
@@ -26,5 +27,5 @@ def cis_cli():
 
 @pytest.fixture
 def scheduler(stasis_cli, cis_cli):
-    return Scheduler(stasis_cli, cis_cli)
+    return Scheduler(None, stasis_cli, cis_cli, Queue(), schedule=True)
 

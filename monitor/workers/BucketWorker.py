@@ -3,7 +3,7 @@
 
 import os
 import time
-from collections import deque
+from queue import Queue
 from threading import Thread
 
 from loguru import logger
@@ -26,8 +26,8 @@ class BucketWorker(Thread):
     """
 
     def __init__(self, parent, stasis: StasisClient, bucket_name,
-                 up_q: deque, storage, sched_q: deque,
-                 test: bool = False, name='Uploader0', daemon=True):
+                 up_q: Queue, storage, sched_q: Queue,
+                 test: bool = False, name='Uploader0', daemon=True, schedule=False):
         super().__init__(name=name, daemon=daemon)
         self.parent = parent
         self.bucket = Bucket(bucket_name)
@@ -36,6 +36,7 @@ class BucketWorker(Thread):
         self.running = False
         self.stasis_cli = stasis
         self.storage = storage
+        self.schedule = schedule
         self.test = test
 
     def run(self):
@@ -45,7 +46,7 @@ class BucketWorker(Thread):
 
         while self.running:
             try:
-                item = self.upload_q.popleft()
+                item = self.upload_q.get()
 
                 logger.info(f'Sending ({item}) {os.path.getsize(item)} bytes to aws')
                 file_basename, extension = str(item.split(os.sep)[-1]).rsplit('.', 1)
@@ -53,22 +54,28 @@ class BucketWorker(Thread):
                 if not self.test:
                     if self.bucket.save(item):
                         logger.info(f'File {item} saved to {self.bucket.bucket_name}')
+                        if self.schedule:
+                            logger.info('\tAdding to scheduling queue.')
+                            self.schedule_q.put_nowait(file_basename)
                     else:
                         self.fail_sample(file_basename, extension)
                 else:
                     logger.info(f'Fake StasisUpdate: Uploaded {item} to {self.bucket.bucket_name}')
-
-                self.schedule_q.append(file_basename)
+                    if self.schedule:
+                        logger.info('\tAdding to fake scheduling queue.')
+                        self.schedule_q.put_nowait(file_basename)
 
             except KeyboardInterrupt:
-                logger.warning(f'Stopping UploaderWorker {self.name}')
+                logger.warning(f'Stopping {self.name} due to Control+C')
                 self.running = False
+                self.schedule_q.queue.clear()
+                self.upload_q.queue.clear()
+                self.schedule_q.join()
+                self.upload_q.join()
                 self.parent.join_threads()
-                continue
 
             except IndexError:
                 time.sleep(1)
-                continue
 
             except Exception as ex:
                 logger.error(f'Error uploading sample {item}: {str(ex)}')
@@ -77,10 +84,13 @@ class BucketWorker(Thread):
                     self.fail_sample(fname, ext)
                 else:
                     logger.info(f'Fake StasisUpdate: Error uploading sample {item}: {str(ex)}')
-                continue
 
-            logger.info(f'Uploader queue size: {len(self.upload_q)}')
-        logger.info(f'Stopping {self.name}')
+            finally:
+                self.upload_q.task_done()
+                logger.info(f'Uploader queue size: {self.upload_q.qsize()}')
+
+        logger.info(f'\tStopping {self.name}')
+        self.join()
 
     def fail_sample(self, file_basename, extension):
         try:

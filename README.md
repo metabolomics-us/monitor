@@ -57,7 +57,7 @@ NOTE: It is suggested to use a 'service wrapper' (like [nssm][1]) to run this ap
 
 ### Requirements
 
-Please download and save in 'docker' folder the following files:
+Please download and save the following files in 'docker' folder:
 
 - pwiz-3.0.21209.zip
 - MinGit-2.32.0-64-bit.zip
