@@ -120,6 +120,7 @@ class Monitor(Thread):
             self.upload_q.join()
             self.schedule_q.join()
             self.join_threads()
+            self.join(THREAD_TIMEOUT)
 
     def join_threads(self):
         for t in self.threads:
