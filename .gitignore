@@ -2,6 +2,7 @@ __pycache__
 *.pyc
 *.pyo
 .pytest_cache
+docker/*.zip
 
 monitor*.log
 monitor_out.txt

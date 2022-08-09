@@ -5,6 +5,7 @@ tests/
 resources/
 
 **/docker/*.ps1
+**/docker/*.zip
 
 .dockerignore
 Dockerfile
