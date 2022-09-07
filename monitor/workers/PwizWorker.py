@@ -61,6 +61,13 @@ class PwizWorker(Thread):
                 item = self.conversion_q.get()
                 file_basename, extension = str(item.split(os.sep)[-1]).split('.')
 
+                # check if sample exists in stasis first
+                print(file_basename)
+                exists = self.stasis_cli.sample_tracking_get(file_basename)
+                if exists == [] or exists is None or len(exists['status']) < 1:
+                    print("File not in stasis, skipping")
+                    continue
+
                 # replace with regex and list of skip values from config var
                 if any([re.search(x, item) is not None for x in self.config['skip']]):
                     logger.info(f'Skipping conversion of DNU sample {item}')
