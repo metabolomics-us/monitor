@@ -13,14 +13,14 @@ monitor:
   skip:
     - '\.scan'
     - '\.~idx2'
-    - '\\DNU(?:.*)?'
-    - '/DNU(?:.*)?'
+    - '\\DNU(?:.*?)?'
+    - '/DNU(?:.*?)?'
     - 'preinj'
     - 'prerun'
     - 'test'
 
   storage: "D:\\lunabkup\\mzml"
-  msconvert: "C:\\tools\\pwiz-3.0.21209\\msconvert.exe"
+  msconvert: "D:\\tools\\pwiz-3.0.21209\\msconvert.exe"
 
 cis:
   url_var: "PROD_CIS_API_URL"
