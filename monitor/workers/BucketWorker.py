@@ -13,31 +13,41 @@ from monitor.Bucket import Bucket
 
 
 class BucketWorker(Thread):
-    """Worker class that uploads each file in it's to an S3 bucket and to a local folder to avoid reconversion
-
-    Parameters
-    ----------
-        bucket_name: str
-            Name of the S3 bucket this worker is uploading to
-        up_q: Queue
-            A queue that contains the filenames to be uploaded
-        storage: str
-            A path for storing converted mzml files
+    """
+    Worker class that uploads each file in it's to an S3 bucket and to a local folder to avoid reconversion
     """
 
-    def __init__(self, parent, stasis: StasisClient, bucket_name,
-                 up_q: Queue, storage, sched_q: Queue,
-                 test: bool = False, name='Uploader0', daemon=True, schedule=False):
+    def __init__(self, parent, stasis: StasisClient, config,
+                 up_q: Queue, sched_q: Queue,
+                 name='Uploader0', daemon=True):
+        """
+
+        Args:
+            parent:
+                Instance parent object
+            stasis: StasisClient
+                A stasis client instance
+            config:
+                An object containing config settings
+            up_q: Queue
+                A queue that contains the filenames to be uploaded
+            sched_q: Queue
+                A queue that contains the samples to be auto-scheduled
+            name: str (Optional. Default: Uploader0)
+                Name of the worker instance
+            daemon:
+                Run the worker as daemon. (Optional. Default: True)
+        """
         super().__init__(name=name, daemon=daemon)
         self.parent = parent
-        self.bucket = Bucket(bucket_name)
+        self.bucket = Bucket(config['aws']['bucket_name'])
         self.upload_q = up_q
         self.schedule_q = sched_q
         self.running = False
         self.stasis_cli = stasis
-        self.storage = storage
-        self.schedule = schedule
-        self.test = test
+        self.storage = config['monitor']['storage']
+        self.schedule = config['monitor']['schedule']
+        self.test = config['test']
 
     def run(self):
         """Starts the Uploader Worker"""
@@ -48,19 +58,23 @@ class BucketWorker(Thread):
             try:
                 item = self.upload_q.get()
 
-                logger.info(f'Sending ({item}) {os.path.getsize(item)} bytes to aws')
                 file_basename, extension = str(item.split(os.sep)[-1]).rsplit('.', 1)
 
                 if not self.test:
-                    if self.bucket.save(item):
-                        logger.info(f'File {item} saved to {self.bucket.bucket_name}')
+                    logger.info(f'Sending ({item}) {os.path.getsize(item)} bytes to aws')
+                    remote_name = self.bucket.save(item)
+                    if remote_name:
+                        logger.info(f'File {remote_name} saved to {self.bucket.bucket_name}')
+                        self.stasis_cli.sample_state_update(remote_name, 'uploaded')
                         if self.schedule:
                             logger.info('\tAdding to scheduling queue.')
                             self.schedule_q.put_nowait(file_basename)
                     else:
                         self.fail_sample(file_basename, extension)
                 else:
-                    logger.info(f'Fake StasisUpdate: Uploaded {item} to {self.bucket.bucket_name}')
+                    logger.info(f'Fake sending ({item}) {os.path.getsize(item)} bytes to aws')
+                    if self.bucket.save(item):
+                        logger.info(f'Fake StasisUpdate: Uploaded {item} to {self.bucket.bucket_name}')
                     if self.schedule:
                         logger.info('\tAdding to fake scheduling queue.')
                         self.schedule_q.put_nowait(file_basename)

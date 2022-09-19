@@ -11,25 +11,39 @@ from monitor.exceptions import NoProfileException
 
 
 class Scheduler(Thread):
-    """Worker class that schedules samples for preprocessing on AWS
-
-    Parameters
-    ----------
-        sched_q: Queue
-            A queue that contains the filenames to be scheduled
+    """
+    Worker class that schedules samples for preprocessing on AWS
     """
 
     def __init__(self, parent, stasis: StasisClient, cis: CISClient,
-                 sched_q: Queue, test: bool = False,
-                 name='Scheduler0', daemon=True, schedule: bool = False):
+                 config, sched_q: Queue,
+                 name='Scheduler0', daemon=True):
+        """
+
+        Args:
+            parent:
+                Instance parent object
+            stasis: StasisClient
+                A stasis client instance
+            cis: CisClient
+                A cis client instance
+            config:
+                An object containing config settings
+            sched_q: Queue
+                A queue that contains the samples to be auto-scheduled
+            name: str (Optional. Default: Scheduler0)
+                Name of the worker instance
+            daemon:
+                Run the worker as daemon. (Optional. Default: True)
+        """
         super().__init__(name=name, daemon=daemon)
         self.parent = parent
         self.stasis_cli = stasis
         self.cis_cli = cis
         self.schedule_q = sched_q
         self.running = False
-        self.schedule = schedule
-        self.test = test
+        self.schedule = config['monitor']['schedule']
+        self.test = config['test']
 
     def run(self):
         item = None

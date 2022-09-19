@@ -32,12 +32,12 @@ class Bucket:
         :param filename: the name of the file to be uploaded
         :return:
         """
-
+        remote_name = filename.split(os.sep)[-1]
         try:
             # from https://boto3.readthedocs.io/en/latest/reference/services/s3.html#S3.Object.upload_file
-            logger.info(f'Saving file {filename} on {self.bucket_name}')
-            self.s3.Object(self.bucket_name, filename.split(os.sep)[-1]).upload_file(filename)
-            return filename.split(os.sep)[-1]
+            logger.info(f'Saving file {remote_name} on {self.bucket_name}')
+            self.s3.Object(self.bucket_name, remote_name).upload_file(filename)
+            return remote_name
         except ConnectionResetError as cre:
             logger.error(f'connection Reset: {cre.strerror} uploading {cre.filename}')
             # raise

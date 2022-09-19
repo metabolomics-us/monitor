@@ -35,6 +35,8 @@ class RawDataEventHandler(RegexMatchingEventHandler):
 
     def on_created(self, event):
         self.conversion_q.put_nowait(event.src_path)
+        print(f'added {event.src_path}')
 
     def on_moved(self, event):
         self.conversion_q.put_nowait(event.dest_path)
+        print(f'added {event.dest_path}')

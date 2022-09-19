@@ -15,24 +15,32 @@ from stasis_client.client import StasisClient
 
 
 class PwizWorker(Thread):
-    """Worker class that converts a raw data file to mzml
-
-    Parameters
-    ----------
-        st_cli: StasisClient
-            Rest client object to interact with the stasis api
-        conversion_q: Queue
-            A queue to hold the files to be converted to mzml
-        upload_q: Queue
-            A queue to hold the files to be uploaded to aws bucket
-        storage: str
-            A path for storing converted mzml files
-        runner: str
-            The path to the msconvert executable
+    """
+    Worker class that converts a raw data file to mzml
     """
 
-    def __init__(self, parent, st_cli: StasisClient, conversion_q: Queue, upload_q: Queue, config,
-                 test=False, name='Converter0', daemon=True):
+    def __init__(self, parent, st_cli: StasisClient,
+                 conversion_q: Queue, upload_q: Queue,
+                 config, name='Converter0', daemon=True):
+        """
+
+        Args:
+            parent:
+                Instance parent object
+            st_cli: StasisClient
+                A stasis client instance
+            conversion_q: Queue
+                A queue that contains the filenames to be converted
+            upload_q: Queue
+                A queue that contains the filenames to be uploaded
+            config:
+                An object containing config settings
+            name: str (Optional. Default: Converter0)
+                Name of the worker instance
+            daemon:
+                Run the worker as daemon. (Optional. Default: True)
+
+        """
         super().__init__(name=name, daemon=daemon)
         self.parent = parent
         self.running = False
@@ -40,11 +48,13 @@ class PwizWorker(Thread):
         self.conversion_q = conversion_q
         self.upload_q = upload_q
         self.config = config
-        self.storage = config['storage'] if config['storage'].endswith(os.path.sep) else config['storage'] + os.path.sep
-        self.test = test
+        self.storage = config['monitor']['storage'] if config['monitor']['storage'].endswith(os.path.sep) else \
+            config['monitor']['storage'] + os.path.sep
+        self.test = config['test']
+
         self._lock = Lock()
 
-        self.runner = config['msconvert']
+        self.runner = config['monitor']['msconvert']
         self.args = ['--mzML', '-e', '.mzml', '--zlib',
                      '--filter', '"peakPicking true 1-"',
                      '--filter', '"zeroSamples removeExtra"',
@@ -62,14 +72,13 @@ class PwizWorker(Thread):
                 file_basename, extension = str(item.split(os.sep)[-1]).split('.')
 
                 # check if sample exists in stasis first
-                print(file_basename)
-                exists = self.stasis_cli.sample_tracking_get(file_basename)
-                if exists == [] or exists is None or len(exists['status']) < 1:
-                    print("File not in stasis, skipping")
-                    continue
+                if self.config['monitor']['exists']:
+                    if not self.stasis_cli.sample_acquisition_exists(file_basename):
+                        logger.info("File not in stasis, skipping")
+                        continue
 
                 # replace with regex and list of skip values from config var
-                if any([re.search(x, item) is not None for x in self.config['skip']]):
+                if any([re.search(x, item) is not None for x in self.config['monitor']['skip']]):
                     logger.info(f'Skipping conversion of DNU sample {item}')
                     continue
 
@@ -116,12 +125,12 @@ class PwizWorker(Thread):
                 time.sleep(1)
 
             except Exception as ex:
-                logger.error(f'Skipping conversion of sample {item} -- Error: {str(ex)}')
                 if not self.test:
+                    logger.error(f'Skipping conversion of sample {item} -- Error: {ex.args}')
                     filename, ext = str(item.split(os.sep)[-1]).split('.')
                     self.fail_sample(filename, ext)
                 else:
-                    logger.error(f'Fake StasisUpdate: Skipping conversion of sample {str(item)} -- Error: {str(ex)}')
+                    logger.error(f'Fake StasisUpdate: Skipping conversion of sample {str(item)} -- Error: {ex.args}')
 
             finally:
                 self.conversion_q.task_done()
@@ -202,11 +211,10 @@ class PwizWorker(Thread):
         """Waits for a file or folder to be fully updated checking it's size"""
         size = -1
         curr = self.get_folder_size4(path) if os.path.isdir(path) else self.get_file_size(path)
-        print(f'INITIAL: size={size} -- current={curr}')
 
         c = 0
         while size < curr:
-            if path.endswith('.d'):
+            if path.endswith('.d') or path.endswith('.wiff'):
                 if self.test:
                     time.sleep(5)
                 else:
@@ -215,7 +223,6 @@ class PwizWorker(Thread):
                 time.sleep(1)
             size = curr
             curr = self.get_folder_size4(path) if os.path.isdir(path) else self.get_file_size(path)
-            print(f'AFTER SLEEP: size={size} -- current={curr}')
 
             if size == curr and c < 5:
                 c += 1

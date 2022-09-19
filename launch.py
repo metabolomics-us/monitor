@@ -27,8 +27,6 @@ if __name__ == "__main__":
     parser.add_argument('-t', '--test', action='store_true',
                         help='run in test mode, no data will be converted or sent to aws. This '
                              'overrides the -c option to use \'appconfig-test.yml\'')
-    parser.add_argument('-s', '--schedule', action='store_true', default=False,
-                        help='schedules the sample to be processed by lc-binbase')
     parser.add_argument('--debug', action='store_true')
 
     args = parser.parse_args()
@@ -49,7 +47,6 @@ if __name__ == "__main__":
 
     with open(configFile, 'r') as stream:
         config = yamlconf.load(stream)
-        config['schedule'] = args.schedule
         config['test'] = args.test
 
         if args.debug:
@@ -65,9 +62,6 @@ if __name__ == "__main__":
                               os.getenv(config['stasis']['api_key_var'], "9MjbJRbAtj8spCJJVTPbP3YWc4wjlW0c7AP47Pmi"))
     cis_cli = CISClient(os.getenv(config['cis']['url_var'], "https://test-api.metabolomics.us/cis"),
                         os.getenv(config['cis']['api_key_var'], "9MjbJRbAtj8spCJJVTPbP3YWc4wjlW0c7AP47Pmi"))
-
-    logger.debug(f'Stasis Client: {stasis_cli._url}  --  {stasis_cli._token}')
-    logger.debug(f'Cis Client:    {cis_cli._url}     --  {cis_cli._token}')
 
     conv_q = Queue()
     aws_q = Queue()

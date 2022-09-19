@@ -18,30 +18,38 @@ THREAD_TIMEOUT = 5
 
 
 class Monitor(Thread):
-    """A file monitoring class
-
-    Parameters
-    ----------
-        config: dict
-            A yaml application configuration file loaded with yamlconf
-        stasis_cli: StasisClient
-            A client class to the Stasis rest API
-        cis_cli: CISClient
-            A client class to the Cis rest API
+    """
+    A file monitoring class
     """
 
     def __init__(self, config, stasis_cli: StasisClient, cis_cli: CISClient,
-                 conv_q: Queue, aws_q: Queue, sched_q: Queue,
-                 test=False, daemon=False):
+                 conv_q: Queue, up_q: Queue, sched_q: Queue,
+                 daemon=False):
+        """
+
+        Args:
+            config:
+                An object containing config settings
+            stasis_cli: StasisClient
+                A stasis client instance
+            cis_cli: CisClient
+                A cis client instance
+            up_q: Queue
+                A queue that contains the filenames to be uploaded
+            sched_q: Queue
+                A queue that contains the samples to be auto-scheduled
+            daemon:
+                Run the worker as daemon. (Optional. Default: True)
+        """
         super().__init__(name='Monitor', daemon=daemon)
         self.config = config
         self.stasis_cli = stasis_cli
         self.cis_cli = cis_cli
         self.conversion_q = conv_q
-        self.upload_q = aws_q
+        self.upload_q = up_q
         self.schedule_q = sched_q
         self.running = True
-        self.test = test
+        self.test = config['test']
         self.threads = []
 
     def run(self):
@@ -52,33 +60,26 @@ class Monitor(Thread):
             # Setup the aws uploader worker
             aws_worker = BucketWorker(self,
                                       self.stasis_cli,
-                                      self.config['aws']['bucketName'],
+                                      self.config,
                                       self.upload_q,
-                                      self.config['monitor']['storage'],
-                                      self.schedule_q,
-                                      self.config['test'],
-                                      schedule=self.config['schedule'])
+                                      self.schedule_q)
 
             scheduler = Scheduler(self,
                                   self.stasis_cli,
                                   self.cis_cli,
-                                  self.schedule_q,
-                                  test=self.config['test'],
-                                  schedule=self.config['schedule'])
+                                  self.config,
+                                  self.schedule_q)
 
             threads = [aws_worker, scheduler]
 
             # Setup the pwiz workers
             [threads.append(
-                PwizWorker(
-                    self,
-                    self.stasis_cli,
-                    self.conversion_q,
-                    self.upload_q,
-                    self.config['monitor'],
-                    test=self.config['test'],
-                    name=f'Converter{x}'
-                )
+                PwizWorker(self,
+                           self.stasis_cli,
+                           self.conversion_q,
+                           self.upload_q,
+                           self.config,
+                           name=f'Converter{x}')
             ) for x in range(0, 5)]
 
             logger.info(f'Starting threads')
@@ -102,6 +103,7 @@ class Monitor(Thread):
             logger.info('Monitor started')
 
             while self.running:
+                # pass
                 time.sleep(0.1)
 
         except KeyboardInterrupt:

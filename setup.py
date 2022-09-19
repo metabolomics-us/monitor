@@ -7,7 +7,7 @@ setup(name='Monitor',
       description='File monitoring module to convert raw data files',
       author='Diego Pedrosa',
       author_email='dpedrosa@ucdavis.edu',
-      url='https://bitbucket.org/fiehnlab/monitor',
+      url='https://github.com/metabolomics-us/monitor',
       license='GPLv3',
       packages=find_packages(exclude=("tests",)),
       data_files=[('config', ['appconfig.yml'])],
@@ -19,8 +19,10 @@ setup(name='Monitor',
           'boto3',
           'botocore',
           'loguru',
-          'git+git://github.com/metabolomics-us/carpy.git@master#egg=stasis-client&subdirectory=stasis-client'
-
+          'pywin32',
+          'retry',
+          'git+https://github.com/metabolomics-us/carpy.git@master#egg=cis-client&subdirectory=cis-client'
+          'git+https://github.com/metabolomics-us/carpy.git@master#egg=stasis-client&subdirectory=stasis-client',
       ],
       include_package_data=True,
       zip_safe=False,
@@ -28,5 +30,4 @@ setup(name='Monitor',
           'Programming Language :: Python :: 3.6',
           'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
           'Intended Audience :: Science/Research',
-      ]
-      )
+      ])
