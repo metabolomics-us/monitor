@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import os
 import time
 from queue import Queue
 from threading import Thread
@@ -95,12 +96,18 @@ class Monitor(Thread):
             )
 
             for p in self.config['monitor']['paths']:
-                logger.info(f'Adding path {p} to monitor')
-                observer.schedule(event_handler, p, recursive=True)
+                if os.path.exists(p):
+                    logger.info(f'Adding path {p} to monitor')
+                    observer.schedule(event_handler, p, recursive=True)
+                else:
+                    logger.error(f'Cannot find raw data folder {p}. ' \
+                        'Please fix the configuration file and restart the application.')
+                    self.running = False
+                    exit(2)
 
-            observer.start()
-
-            logger.info('Monitor started')
+            if self.running:
+                observer.start()
+                logger.info('Monitor started')
 
             while self.running:
                 # pass
@@ -114,15 +121,15 @@ class Monitor(Thread):
             logger.info('\tMonitor closing queues and threads')
             observer.unschedule_all()
             observer.stop()
-            observer.join(THREAD_TIMEOUT)
-            self.conversion_q.queue.clear()
-            self.upload_q.queue.clear()
-            self.schedule_q.queue.clear()
+            observer.join(THREAD_TIMEOUT) if observer.is_alive() else None
+            self.conversion_q.queue.clear() if self.conversion_q.not_empty else None
+            self.upload_q.queue.clear() if self.upload_q.not_empty else None
+            self.schedule_q.queue.clear() if self.schedule_q.not_empty else None
             self.conversion_q.join()
             self.upload_q.join()
             self.schedule_q.join()
             self.join_threads()
-            self.join(THREAD_TIMEOUT)
+            self.join(THREAD_TIMEOUT) if self.is_alive() else None
 
     def join_threads(self):
         for t in self.threads:
