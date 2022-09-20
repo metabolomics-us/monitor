@@ -60,11 +60,18 @@ if __name__ == "__main__":
 
     stasis_cli = StasisClient(os.getenv(config['stasis']['url_var'], "https://test-api.metabolomics.us/stasis"),
                               os.getenv(config['stasis']['api_key_var'], "9MjbJRbAtj8spCJJVTPbP3YWc4wjlW0c7AP47Pmi"))
+    if stasis_cli:
+        logger.info("Stasis client initialized")
+
     cis_cli = CISClient(os.getenv(config['cis']['url_var'], "https://test-api.metabolomics.us/cis"),
                         os.getenv(config['cis']['api_key_var'], "9MjbJRbAtj8spCJJVTPbP3YWc4wjlW0c7AP47Pmi"))
+
+    if cis_cli:
+        logger.info("Cis client initialized")
 
     conv_q = Queue()
     aws_q = Queue()
     sched_q = Queue()
 
     Monitor(config, stasis_cli, cis_cli, conv_q, aws_q, sched_q).run()
+
