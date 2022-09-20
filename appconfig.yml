@@ -22,10 +22,10 @@ monitor:
     - 'test'
 
   # Destination folder of converted files
-  storage: "D:\\lunabkup\\mzml"
+  storage: "D:\\data\\mzml"
 
   # Full path to ProteoWizard msconvert tool
-  msconvert: "D:\\tools\\pwiz-3.0.21209\\msconvert.exe"
+  msconvert: "D:\\tools\\pwiz\\msconvert.exe"
 
   # Enables automatic scheduling of converted samples. Default: False
   schedule: False

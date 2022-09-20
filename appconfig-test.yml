@@ -24,7 +24,7 @@ monitor:
   storage: "D:\\data\\mzml"
 
   # Full path to ProteoWizard msconvert tool
-  msconvert: "D:\\tools\\pwiz-3.0.21209\\msconvert.exe"
+  msconvert: "c:\\tools\\pwiz\\msconvert.exe"
 
   # Enables automatic scheduling of converted samples. Default: False
   schedule: False
