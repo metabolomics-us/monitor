@@ -100,8 +100,8 @@ class Monitor(Thread):
                     logger.info(f'Adding path {p} to monitor')
                     observer.schedule(event_handler, p, recursive=True)
                 else:
-                    logger.error(f'Cannot find raw data folder {p}. ' \
-                        'Please fix the configuration file and restart the application.')
+                    logger.error(f'Cannot find raw data folder {p}. '
+                                 f'Please fix the configuration file and restart the application.')
                     self.running = False
                     exit(2)
 

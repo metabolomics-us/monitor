@@ -3,15 +3,9 @@ from queue import Queue
 from monitor.workers.Scheduler import Scheduler
 
 
-def test_schedule_real_sample(stasis_cli, cis_cli, wconfig):
-    smpl = 'Castro019_MX635819_negCSH_K-RU-P-0039-019'
+def test_schedule_sample(stasis_cli, cis_cli, config):
+    sched_q = Queue()
 
-    scheduler = Scheduler(None, stasis_cli, cis_cli, wconfig, Queue())
+    sched = Scheduler(None, stasis_cli, cis_cli, config, sched_q)
 
-    scheduler.start()
-
-    scheduler.schedule_q.put(smpl)
-
-    scheduler.join(timeout=10)
-
-    assert stasis_cli.sample_tracking_get(smpl) == 'scheduled'
+    sched.schedule_sample('Babdor001_MX635067_negBA_IMucsf-6-086-300')

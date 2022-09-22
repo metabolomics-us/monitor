@@ -53,18 +53,19 @@ class Scheduler(Thread):
             try:
                 item = self.schedule_q.get()
 
-                if self.test:
-                    logger.info(f'Fake Scheduling sample with id {item}')
-                else:
-                    logger.info(f'Scheduling sample with id {item}')
+                # if self.test:
+                #     logger.info(f'Fake Scheduling sample with id {item}')
+                # else:
+                logger.info(f'Scheduling sample with id {item}')
 
-                    job = self.schedule_sample(item)
+                job = self.schedule_sample(item)
+                logger.info(f'job: {job}')
 
-                    if job:
-                        logger.info(f'Schedule successful. Job id {job["job"]}')
+                if job:
+                    logger.info(f'Schedule successful. Job id {job["job"]}')
 
             except KeyboardInterrupt:
-                logger.warning(f'Stopping {self.name} due to Control+C')
+                logger.warning(f'Stopping {self.name} due to Keyboard Interrupt')
                 self.running = False
                 self.schedule_q.queue.clear()
                 self.schedule_q.join()
@@ -74,7 +75,7 @@ class Scheduler(Thread):
                 sleep(1)
 
             except Exception as ex:
-                logger.error(f'Error scheduling sample {item}: {ex.args}')
+                logger.error(f'Error scheduling sample {item}: {ex.args}', exc_info=True)
 
             finally:
                 self.schedule_q.task_done()
@@ -88,17 +89,17 @@ class Scheduler(Thread):
             # get sample data.
             sample_data = self.stasis_cli.sample_acquisition_get(sample_id)
         except Exception as ex:
-            logger.error(f"Can't get sample '{sample_id}' metadata.\nStasisClient error: {ex.args}")
+            logger.error(f"Can't get sample '{sample_id}' metadata.\nStasisClient error: {ex.args}", exc_info=True)
             return
 
-        # build method string
-        method = ' | '.join([sample_data['chromatography']['method'], sample_data['chromatography']['instrument'],
-                             sample_data['chromatography']['column'], sample_data['chromatography']['ionisation']])
-
-        version = self._get_latest_version(method)
-        logger.debug(f'latest method version: ' + version)
-
         try:
+            # build method string
+            method = ' | '.join([sample_data['chromatography']['method'], sample_data['chromatography']['instrument'],
+                                 sample_data['chromatography']['column'], sample_data['chromatography']['ionisation']])
+
+            version = self._get_latest_version(method)
+            logger.info(f'latest method version: ' + version)
+
             # get profile data
             profile_list = self.cis_cli.get_unique_method_profiles(method, version)
 
@@ -108,14 +109,14 @@ class Scheduler(Thread):
             profiles = ','.join([x['profile'] for x in profile_list])
 
         except CisClientException as ex:
-            logger.error(f'CisClient error: {ex.args}')
-            return
+            logger.error(f'CisClient error: {ex.args}', exc_info=True)
+            raise ex
         except NoProfileException as ex:
-            logger.error(f'Scheduling error: {ex.args}')
-            return
+            logger.error(f'Scheduling error: {ex.args}', exc_info=True)
+            raise ex
         except Exception as ex:
-            logger.error(f'Error gathering sample data: {ex.args}')
-            return
+            logger.error(f'Error gathering sample data: {ex.args}', exc_info=True)
+            raise ex
 
         job = {
             'id': f'preprocess_{sample_id}',  # in case we need more uniqueness: {time.strftime("%Y%m%d-%H%M%S")}_
@@ -140,8 +141,8 @@ class Scheduler(Thread):
                 return
 
         except Exception as ex:
-            logger.error(f'Error storing or scheduling data: {ex.args}')
-            return
+            logger.error(f'Error storing or scheduling data: {ex.args}', exc_info=True)
+            raise ex
 
     def _get_latest_version(self, method):
         versions = self.cis_cli.get_method_last_version(method)
