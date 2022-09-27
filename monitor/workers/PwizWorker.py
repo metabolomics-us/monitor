@@ -81,7 +81,8 @@ class PwizWorker(Thread):
                 for x in self.config['monitor']['skip']:
                     result = re.search(x, item)
                     if result is not None:
-                        logger.info(f'Skipping conversion of DNU sample {item}.\nExpression {x} on {item} resulted in {result}')
+                        logger.info(
+                            f'\tSkipping conversion of DNU sample {item}.\n\tExpression {x} on {item} resulted in {result}')
                         continue
 
                 logger.info(f'FILE: {item}')
@@ -136,7 +137,7 @@ class PwizWorker(Thread):
         storage = self.update_output(item)
         args = [self.runner, item, *self.args, storage.lower()]
 
-        logger.info(f'RUNNING: {args}')
+        logger.info(f'\tRUNNING: {args}')
         result = subprocess.run(args, stdout=subprocess.PIPE, check=True)
         if result.returncode == 0:
             resout = re.search(r'writing output file: (.*?)\n', result.stdout.decode('ascii')).group(1).strip()
@@ -238,7 +239,7 @@ class PwizWorker(Thread):
             logger.error(f'\tAdd "failed" conversion status to stasis for sample "{file_basename}.{extension}"')
             self.stasis_cli.sample_state_update(file_basename, 'failed')
         except Exception as ex:
-            logger.error(f'\tStasis client can\'t send "failed" status for sample {file_basename}\n'
+            logger.error(f'\tStasis client can\'t send "failed" status for sample {file_basename}.{extension}\n'
                          f'\tResponse: {str(ex)}')
 
     def update_output(self, item):

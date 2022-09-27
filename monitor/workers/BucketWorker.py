@@ -52,6 +52,9 @@ class BucketWorker(Thread):
     def run(self):
         """Starts the Uploader Worker"""
         item = None
+        file_basename = None
+        extension = None
+
         self.running = True
 
         while self.running:
@@ -62,14 +65,20 @@ class BucketWorker(Thread):
 
                 logger.info(f'Sending ({item}) {os.path.getsize(item)} bytes to aws')
                 remote_name = self.bucket.save(item)
+
                 if remote_name:
-                    logger.info(f'File {remote_name} saved to {self.bucket.bucket_name}')
+                    logger.info(f'\tFile {remote_name} saved to {self.bucket.bucket_name}')
                     self.stasis_cli.sample_state_update(remote_name, 'uploaded')
+
                     if self.schedule:
                         logger.info('\tAdding to scheduling queue.')
                         self.schedule_q.put_nowait(file_basename)
                 else:
                     self.fail_sample(file_basename, extension)
+
+            except ConnectionResetError as cre:
+                logger.error(f'\tConnection Reset: {cre.strerror} uploading {cre.filename}')
+                self.fail_sample(file_basename, extension)
 
             except KeyboardInterrupt:
                 logger.warning(f'Stopping {self.name} due to Control+C')
@@ -84,9 +93,8 @@ class BucketWorker(Thread):
                 time.sleep(1)
 
             except Exception as ex:
-                logger.error(f'Error uploading sample {item}: {str(ex)}')
-                fname, ext = str(item.split(os.sep)[-1]).rsplit('.', 1)
-                self.fail_sample(fname, ext)
+                logger.error(f'\tError uploading sample {item}: {str(ex)}')
+                self.fail_sample(file_basename, extension)
 
             finally:
                 self.upload_q.task_done()

@@ -35,33 +35,31 @@ class Bucket:
         remote_name = filename.split(os.sep)[-1]
         try:
             # from https://boto3.readthedocs.io/en/latest/reference/services/s3.html#S3.Object.upload_file
-            logger.info(f'Saving file {remote_name} on {self.bucket_name}')
+            logger.info(f'\tSaving file {remote_name} on {self.bucket_name}')
             self.s3.Object(self.bucket_name, remote_name).upload_file(filename)
             return remote_name
-        except ConnectionResetError as cre:
-            logger.error(f'connection Reset: {cre.strerror} uploading {cre.filename}')
-            # raise
-        except Exception as e:
-            logger.error(f'Can\' upload file: {filename}, error: {str(e)}')
-            # raise
+        except ConnectionResetError:
+            raise
+        except Exception:
+            raise
 
-    def load(self, name):
-        """
-            loads the specified content
-        :param name: the name of the content
-        :return:
-        """
-        try:
-            logger.info('[Bucket] - loading: %s' % name)
-            data = self.s3.Object(self.bucket_name).get()['Body']
-
-            return data.read().decode()
-        except ClientError as e:
-            if e.response['Error']['Code'] == "404":
-                logger.error('The object does not exist.')
-            else:
-                logger.error(str(e))
-                # raise
+    # def load(self, name):
+    #     """
+    #         loads the specified content
+    #     :param name: the name of the content
+    #     :return:
+    #     """
+    #     try:
+    #         logger.info('[Bucket] - loading: %s' % name)
+    #         data = self.s3.Object(self.bucket_name).get()['Body']
+    #
+    #         return data.read().decode()
+    #     except ClientError as e:
+    #         if e.response['Error']['Code'] == "404":
+    #             logger.error('The object does not exist.')
+    #         else:
+    #             logger.error(str(e))
+    #             # raise
 
     def exists(self, name) -> bool:
         """
@@ -72,14 +70,11 @@ class Bucket:
 
         try:
             self.s3.Object(self.bucket_name, name).load()
+
         except ClientError as e:
             if e.response['Error']['Code'] == "404":
                 # The object does not exist.
                 return False
-            # else:
-            #     # Something else has gone wrong.
-            #     logger.info("EXCEPTION:" + str(e))
-            #     raise
         except Exception as other:
             logger.info(f'Other exception: {str(other)}')
         else:
