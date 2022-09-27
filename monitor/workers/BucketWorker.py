@@ -60,24 +60,16 @@ class BucketWorker(Thread):
 
                 file_basename, extension = str(item.split(os.sep)[-1]).rsplit('.', 1)
 
-                if not self.test:
-                    logger.info(f'Sending ({item}) {os.path.getsize(item)} bytes to aws')
-                    remote_name = self.bucket.save(item)
-                    if remote_name:
-                        logger.info(f'File {remote_name} saved to {self.bucket.bucket_name}')
-                        self.stasis_cli.sample_state_update(remote_name, 'uploaded')
-                        if self.schedule:
-                            logger.info('\tAdding to scheduling queue.')
-                            self.schedule_q.put_nowait(file_basename)
-                    else:
-                        self.fail_sample(file_basename, extension)
-                else:
-                    logger.info(f'Fake sending ({item}) {os.path.getsize(item)} bytes to aws')
-                    if self.bucket.save(item):
-                        logger.info(f'Fake StasisUpdate: Uploaded {item} to {self.bucket.bucket_name}')
+                logger.info(f'Sending ({item}) {os.path.getsize(item)} bytes to aws')
+                remote_name = self.bucket.save(item)
+                if remote_name:
+                    logger.info(f'File {remote_name} saved to {self.bucket.bucket_name}')
+                    self.stasis_cli.sample_state_update(remote_name, 'uploaded')
                     if self.schedule:
-                        logger.info('\tAdding to fake scheduling queue.')
+                        logger.info('\tAdding to scheduling queue.')
                         self.schedule_q.put_nowait(file_basename)
+                else:
+                    self.fail_sample(file_basename, extension)
 
             except KeyboardInterrupt:
                 logger.warning(f'Stopping {self.name} due to Control+C')
@@ -93,11 +85,8 @@ class BucketWorker(Thread):
 
             except Exception as ex:
                 logger.error(f'Error uploading sample {item}: {str(ex)}')
-                if not self.test:
-                    fname, ext = str(item.split(os.sep)[-1]).rsplit('.', 1)
-                    self.fail_sample(fname, ext)
-                else:
-                    logger.info(f'Fake StasisUpdate: Error uploading sample {item}: {str(ex)}')
+                fname, ext = str(item.split(os.sep)[-1]).rsplit('.', 1)
+                self.fail_sample(fname, ext)
 
             finally:
                 self.upload_q.task_done()

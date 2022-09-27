@@ -78,9 +78,11 @@ class PwizWorker(Thread):
                         continue
 
                 # replace with regex and list of skip values from config var
-                if any([re.search(x, item) is not None for x in self.config['monitor']['skip']]):
-                    logger.info(f'Skipping conversion of DNU sample {item}')
-                    continue
+                for x in self.config['monitor']['skip']:
+                    result = re.search(x, item)
+                    if result is not None:
+                        logger.info(f'Skipping conversion of DNU sample {item}.\nExpression {x} on {item} resulted in {result}')
+                        continue
 
                 logger.info(f'FILE: {item}')
                 self.wait_for_item(item)
@@ -88,11 +90,12 @@ class PwizWorker(Thread):
                 if item.endswith('.mzml'):
                     self.upload_q.put_nowait(item)
                 else:
+                    # add acquired status
+                    self.pass_sample_acquisition(file_basename, extension)
+
+                    # try conversion and update status
                     try:
-                        if not self.test:
-                            self.convert(file_basename, extension, item)
-                        else:
-                            self.fake_convert(file_basename, extension, item)
+                        self.convert(file_basename, extension, item)
 
                     except subprocess.CalledProcessError as cpe:
                         logger.warning(f'Conversion of {item} failed.')
@@ -102,15 +105,7 @@ class PwizWorker(Thread):
                                       'stdout': cpe.stdout,
                                       'stderr': cpe.stderr})
 
-                        if not self.test:
-                            self.fail_sample(file_basename, extension)
-                        else:
-                            logger.warning(f'Fake StasisUpdate: Conversion of {item} failed')
-                            logger.error({'command': cpe.cmd,
-                                          'exit_code': cpe.returncode,
-                                          'output': cpe.output,
-                                          'stdout': cpe.stdout,
-                                          'stderr': cpe.stderr})
+                        self.fail_sample(file_basename, extension)
 
             except KeyboardInterrupt:
                 logger.warning(f'Stopping {self.name} due to Control+C')
@@ -125,12 +120,9 @@ class PwizWorker(Thread):
                 time.sleep(1)
 
             except Exception as ex:
-                if not self.test:
-                    logger.error(f'Skipping conversion of sample {item} -- Error: {ex.args}')
-                    filename, ext = str(item.split(os.sep)[-1]).split('.')
-                    self.fail_sample(filename, ext)
-                else:
-                    logger.error(f'Fake StasisUpdate: Skipping conversion of sample {str(item)} -- Error: {ex.args}')
+                logger.error(f'Skipping conversion of sample {item} -- Error: {ex.args}')
+                filename, ext = str(item.split(os.sep)[-1]).split('.')
+                self.fail_sample(filename, ext)
 
             finally:
                 self.conversion_q.task_done()
@@ -158,28 +150,25 @@ class PwizWorker(Thread):
         else:
             # update tracking status
             logger.warning(f'\tSetting {item} as failed')
-            if not self.test:
-                self.fail_sample(file_basename, extension)
-            else:
-                logger.warning(f'Fake StasisUpdate: Conversion of {item} failed')
+            self.fail_sample(file_basename, extension)
 
-    def fake_convert(self, filename_base, extension, item):
-        args = local()
-        storage = self.update_output(item)
-        args = [self.runner, item, *self.args, storage]
-
-        logger.info(f'RUNNING: {args}')
-        logger.info(f'Fake StasisUpdate: Converted {storage}')
-        resout = storage + filename_base + '.mzml'
-
-        os.makedirs(os.path.dirname(resout), exist_ok=True)
-        with open(resout, 'w') as d:
-            d.flush()
-
-        time.sleep(1)
-
-        logger.info(f'Added {resout} to upload queue')
-        self.upload_q.put_nowait(resout)
+    # def fake_convert(self, filename_base, extension, item):
+    #     args = local()
+    #     storage = self.update_output(item)
+    #     args = [self.runner, item, *self.args, storage]
+    #
+    #     logger.info(f'RUNNING: {args}')
+    #     logger.info(f'Fake StasisUpdate: Converted {storage}')
+    #     resout = storage + filename_base + '.mzml'
+    #
+    #     os.makedirs(os.path.dirname(resout), exist_ok=True)
+    #     with open(resout, 'w') as d:
+    #         d.flush()
+    #
+    #     time.sleep(1)
+    #
+    #     logger.info(f'Added {resout} to upload queue')
+    #     self.upload_q.put_nowait(resout)
 
     def get_file_size(self, path):
         return os.stat(path).st_size
@@ -215,10 +204,7 @@ class PwizWorker(Thread):
         c = 0
         while size < curr:
             if path.endswith('.d') or path.endswith('.wiff'):
-                if self.test:
-                    time.sleep(5)
-                else:
-                    time.sleep(3)
+                time.sleep(3)
             else:
                 time.sleep(1)
             size = curr
@@ -228,6 +214,15 @@ class PwizWorker(Thread):
                 c += 1
             elif c == 5:
                 break
+
+    def pass_sample_acquisition(self, file_basename, extension):
+        try:
+            logger.info(f'\tAdd "acquired" status to stasis for sample "{file_basename}.{extension}"')
+            self.stasis_cli.sample_state_update(file_basename, 'acquired', f'{file_basename}.{extension}')
+        except Exception as ex:
+            logger.error(f'\tStasis client can\'t send "converted" status for sample {file_basename}\n'
+                         f'\tResponse: {str(ex)}')
+            pass
 
     def pass_sample(self, file_basename, extension):
         try:

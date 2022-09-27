@@ -53,9 +53,6 @@ class Scheduler(Thread):
             try:
                 item = self.schedule_q.get()
 
-                # if self.test:
-                #     logger.info(f'Fake Scheduling sample with id {item}')
-                # else:
                 logger.info(f'Scheduling sample with id {item}')
 
                 job = self.schedule_sample(item)
