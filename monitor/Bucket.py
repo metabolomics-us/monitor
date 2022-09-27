@@ -17,16 +17,20 @@ class Bucket:
 
     def __init__(self, bucket_name):
         self.bucket_name = bucket_name
-        self.s3 = boto3.resource('s3')
-
-        # buckets = boto3.client('s3').list_buckets()
+        self.s3 = boto3.client('s3')
 
         try:
-            boto3.client('s3').create_bucket(Bucket=bucket_name, CreateBucketConfiguration={
-                'LocationConstraint': 'us-west-2'})
-            logger.info(f'Created bucket: {bucket_name}')
-        except Exception as e:
-            logger.warning(f'Bucket exists, skipping creation.')
+            response = self.s3.list_buckets()
+
+            buckets = [bucket["Name"] for bucket in response['Buckets']]
+            if not self.bucket_name in buckets:
+                boto3.client('s3').create_bucket(Bucket=self.bucket_name, CreateBucketConfiguration={
+                    'LocationConstraint': 'us-west-2'})
+                logger.info(f'Created bucket: {self.bucket_name}')
+            else:
+                logger.info(f'Bucket exists: {self.bucket_name}')
+        except Exception as ex:
+            logger.error(f'Error checking for destination bucket: {str(ex)}')
 
     def save(self, filename):
         """

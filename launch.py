@@ -17,7 +17,7 @@ from monitor.Monitor import Monitor
 
 logger.remove()
 fmt = "<level>{level: <7}</level> | <g>{time:YYYY-MM-DD hh:mm:ss}</g> | <m>{thread.name: <10}</m> | " \
-      "<c>({line: ^3}){file: <20} {function: <20}</c> | {message}"
+      "<c>{file: >20} ({line: >3}) {function: <20}</c> | {message}"
 logger.add(sys.stderr, format=fmt, level="INFO")
 
 if __name__ == "__main__":
