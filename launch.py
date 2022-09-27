@@ -9,6 +9,7 @@ from queue import Queue
 
 import yamlconf
 from cisclient.client import CISClient
+from cisclient.client import logger as cis_logger
 from loguru import logger
 from stasis_client.client import StasisClient
 
@@ -16,7 +17,7 @@ from monitor.Monitor import Monitor
 
 logger.remove()
 fmt = "<level>{level: <7}</level> | <g>{time:YYYY-MM-DD hh:mm:ss}</g> | <m>{thread.name: <10}</m> | " \
-      "<c>{file: <20} [line:{line: ^3}] {function: <20}</c> | {message}"
+      "<c>({line: ^3}){file: <20} {function: <20}</c> | {message}"
 logger.add(sys.stderr, format=fmt, level="INFO")
 
 if __name__ == "__main__":
@@ -31,11 +32,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.debug:
-        logger.remove()
-        logger.add(sys.stderr, format=fmt, level="DEBUG")
-        logger.debug("Running in debug mode")
-
     if args.config:
         configFile = args.config
     else:
@@ -49,9 +45,6 @@ if __name__ == "__main__":
         config = yamlconf.load(stream)
         config['test'] = args.test
 
-        if args.debug:
-            logger.debug('Configuration: ' + json.dumps(config, indent=2))
-
     if os.path.exists(config['monitor']['msconvert']):
         logger.info('Found ProteoWizard')
     else:
@@ -61,13 +54,22 @@ if __name__ == "__main__":
     stasis_cli = StasisClient(os.getenv(config['stasis']['url_var'], "https://test-api.metabolomics.us/stasis"),
                               os.getenv(config['stasis']['api_key_var'], "9MjbJRbAtj8spCJJVTPbP3YWc4wjlW0c7AP47Pmi"))
     if stasis_cli:
-        logger.info("Stasis client initialized")
+        logger.info(f'Stasis client initialized. (url: {stasis_cli._url})')
 
     cis_cli = CISClient(os.getenv(config['cis']['url_var'], "https://test-api.metabolomics.us/cis"),
                         os.getenv(config['cis']['api_key_var'], "9MjbJRbAtj8spCJJVTPbP3YWc4wjlW0c7AP47Pmi"))
 
     if cis_cli:
-        logger.info("Cis client initialized")
+        logger.info(f'Cis client initialized. (url: {cis_cli._url})')
+
+    if args.debug:
+        logger.remove()
+        logger.add(sys.stderr, format=fmt, level='DEBUG')
+        logger.debug('Running in debug mode')
+        logger.debug('Configuration: ' + json.dumps(config, indent=2))
+
+        stasis_cli.logger.level = 'DEBUG'
+        cis_logger.level = 'DEBUG'
 
     conv_q = Queue()
     aws_q = Queue()

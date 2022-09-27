@@ -19,6 +19,8 @@ class Bucket:
         self.bucket_name = bucket_name
         self.s3 = boto3.resource('s3')
 
+        # buckets = boto3.client('s3').list_buckets()
+
         try:
             boto3.client('s3').create_bucket(Bucket=bucket_name, CreateBucketConfiguration={
                 'LocationConstraint': 'us-west-2'})

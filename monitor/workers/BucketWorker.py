@@ -63,25 +63,25 @@ class BucketWorker(Thread):
 
                 file_basename, extension = str(item.split(os.sep)[-1]).rsplit('.', 1)
 
-                logger.info(f'Sending ({item}) {os.path.getsize(item)} bytes to aws')
+                logger.info(f'Uploading {item} ({os.path.getsize(item)} bytes) to {self.bucket.bucket_name}')
                 remote_name = self.bucket.save(item)
 
                 if remote_name:
                     logger.info(f'\tFile {remote_name} saved to {self.bucket.bucket_name}')
-                    self.stasis_cli.sample_state_update(remote_name, 'uploaded')
+                    self.stasis_cli.sample_state_update(remote_name, 'uploaded', file_handle=f'{file_basename}.mzml')
 
                     if self.schedule:
                         logger.info('\tAdding to scheduling queue.')
                         self.schedule_q.put_nowait(file_basename)
                 else:
-                    self.fail_sample(file_basename, extension)
+                    self.fail_sample(file_basename, 'mzml')
 
             except ConnectionResetError as cre:
                 logger.error(f'\tConnection Reset: {cre.strerror} uploading {cre.filename}')
-                self.fail_sample(file_basename, extension)
+                self.fail_sample(file_basename, 'mzml')
 
             except KeyboardInterrupt:
-                logger.warning(f'Stopping {self.name} due to Control+C')
+                logger.warning(f'\tStopping {self.name} due to Control+C')
                 self.running = False
                 self.schedule_q.queue.clear()
                 self.upload_q.queue.clear()
@@ -94,7 +94,7 @@ class BucketWorker(Thread):
 
             except Exception as ex:
                 logger.error(f'\tError uploading sample {item}: {str(ex)}')
-                self.fail_sample(file_basename, extension)
+                self.fail_sample(file_basename, 'mzml')
 
             finally:
                 self.upload_q.task_done()
@@ -105,10 +105,10 @@ class BucketWorker(Thread):
 
     def fail_sample(self, file_basename, extension):
         try:
-            logger.error(f'\tAdd "failed" upload status to stasis for sample "{file_basename}.{extension}"')
+            logger.error(f'\tAdd "failed" upload status to stasis for sample {file_basename}.{extension}')
             self.stasis_cli.sample_state_update(file_basename, 'failed')
         except Exception as ex:
-            logger.error(f'\tStasis client can\'t send "failed" status for sample {file_basename}\n'
+            logger.error(f'\tStasis client can\'t send "failed" status for sample {file_basename}.{extension}. '
                          f'\tResponse: {str(ex)}')
 
     def exists(self, filename):
