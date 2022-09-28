@@ -17,10 +17,10 @@ class Bucket:
 
     def __init__(self, bucket_name):
         self.bucket_name = bucket_name
-        self.s3 = boto3.client('s3')
+        self.s3 = boto3.resource('s3')
 
         try:
-            response = self.s3.list_buckets()
+            response = boto3.client('s3').list_buckets()
 
             buckets = [bucket["Name"] for bucket in response['Buckets']]
             if not self.bucket_name in buckets:
