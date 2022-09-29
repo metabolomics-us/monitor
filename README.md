@@ -21,13 +21,14 @@ Install from source by cloning our repository [source code](https://bitbucket.co
 and running:
 
     $ cd monitor
-    $ python setup.py install
+    $ pip install -r requirements
+    $ pip install ./
 
-Python versions 3.5 and newer are supported.
+Python versions 3.8 and newer are supported.
 
 Tests can be run using
 
-    $ python setup.py test
+    $ pyttest tests
 
 ## Usage
 
@@ -39,13 +40,13 @@ Configure ProteoWizard's installation folder in appconfig.yml
 
 This application can be run as follows:
 
-    $ python bin/monitorLaunch.py [options]
+    $ python launch.py [options]
 
 Before running, please ensure you update the config file to your needs. 
 
 Please use 
 
-    $ python bin/monitorLaunch.py -h
+    $ python launch.py -h
 
 to get a list of the available options.
 
