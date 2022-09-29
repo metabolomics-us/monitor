@@ -72,20 +72,21 @@ class PwizWorker(Thread):
 
                 logger.info(f'Starting conversion of {item}')
 
-                file_basename, extension = str(item.split(os.sep)[-1]).split('.')
+                file_basename, extension = str(item.split(os.sep)[-1]).rsplit('.', 1)
+
+                # replace with regex and list of skip values from config var
+                result = [re.search(x, item) is not None for x in self.config['monitor']['skip']]
+                logger.info(result)
+                if any(result):
+                    logger.info(f'\tSkipping conversion of DNU sample {item}.')
+                    # self.conversion_q.task_done()
+                    continue
 
                 # check if sample exists in stasis first
                 if self.config['monitor']['exists']:
                     if not self.stasis_cli.sample_acquisition_exists(file_basename):
-                        logger.info("File not in stasis, skipping")
-                        continue
-
-                # replace with regex and list of skip values from config var
-                for x in self.config['monitor']['skip']:
-                    result = re.search(x, item)
-                    if result is not None:
-                        logger.info(
-                            f'\tSkipping conversion of DNU sample {item}.\n\tExpression {x} on {item} resulted in {result}')
+                        logger.info('File not in stasis, skipping')
+                        # self.conversion_q.task_done()
                         continue
 
                 self.wait_for_item(item)
@@ -119,7 +120,8 @@ class PwizWorker(Thread):
                 self.upload_q.join()
                 self.parent.join_threads()
 
-            except IndexError:
+            except IndexError as ex:
+                logger.error(str(ex))
                 time.sleep(1)
 
             except Exception as ex:
