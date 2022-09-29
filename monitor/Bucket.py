@@ -49,23 +49,6 @@ class Bucket:
         except Exception:
             raise
 
-    # def load(self, name):
-    #     """
-    #         loads the specified content
-    #     :param name: the name of the content
-    #     :return:
-    #     """
-    #     try:
-    #         logger.info('[Bucket] - loading: %s' % name)
-    #         data = self.s3.Object(self.bucket_name).get()['Body']
-    #
-    #         return data.read().decode()
-    #     except ClientError as e:
-    #         if e.response['Error']['Code'] == "404":
-    #             logger.error('The object does not exist.')
-    #         else:
-    #             logger.error(str(e))
-    #             # raise
 
     def exists(self, name) -> bool:
         """
