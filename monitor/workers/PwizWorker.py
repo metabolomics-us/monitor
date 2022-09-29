@@ -76,7 +76,6 @@ class PwizWorker(Thread):
 
                 # replace with regex and list of skip values from config var
                 result = [re.search(x, item) is not None for x in self.config['monitor']['skip']]
-                logger.info(result)
                 if any(result):
                     logger.info(f'\tSkipping conversion of DNU sample {item}.')
                     # self.conversion_q.task_done()
