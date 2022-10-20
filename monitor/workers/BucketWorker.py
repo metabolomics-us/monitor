@@ -74,11 +74,12 @@ class BucketWorker(Thread):
                         logger.info('\tAdding to scheduling queue.')
                         self.schedule_q.put_nowait(file_basename)
                 else:
-                    self.fail_sample(file_basename, 'mzml')
+                    self.fail_sample(file_basename, 'mzml',
+                                     reason='some unknown error happened while uploading the file')
 
             except ConnectionResetError as cre:
                 logger.error(f'\tConnection Reset: {cre.strerror} uploading {cre.filename}')
-                self.fail_sample(file_basename, 'mzml')
+                self.fail_sample(file_basename, 'mzml', reason=str(cre))
 
             except KeyboardInterrupt:
                 logger.warning(f'\tStopping {self.name} due to Control+C')
@@ -94,7 +95,7 @@ class BucketWorker(Thread):
 
             except Exception as ex:
                 logger.error(f'\tError uploading sample {item}: {str(ex)}')
-                self.fail_sample(file_basename, 'mzml')
+                self.fail_sample(file_basename, 'mzml', reason=str(ex))
 
             finally:
                 self.upload_q.task_done()
@@ -106,15 +107,15 @@ class BucketWorker(Thread):
     def pass_sample(self, file_basename):
         try:
             logger.info(f'\tAdd "uploaded" status to stasis for sample {file_basename}')
-            self.stasis_cli.sample_state_update(file_basename, 'uploaded')
+            self.stasis_cli.sample_state_update(file_basename, 'uploaded_raw')
         except Exception as ex:
             logger.error(f'\tStasis client can\'t send "uploaded" status for sample {file_basename}. '
                          f'\tResponse: {str(ex)}')
 
-    def fail_sample(self, file_basename, extension):
+    def fail_sample(self, file_basename, extension, reason):
         try:
             logger.error(f'\tAdd "failed" upload status to stasis for sample {file_basename}.{extension}')
-            self.stasis_cli.sample_state_update(file_basename, 'failed')
+            self.stasis_cli.sample_state_update(file_basename, 'failed', reason=reason)
         except Exception as ex:
             logger.error(f'\tStasis client can\'t send "failed" status for sample {file_basename}.{extension}. '
                          f'\tResponse: {str(ex)}')

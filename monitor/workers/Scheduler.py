@@ -61,7 +61,7 @@ class Scheduler(Thread):
                 if job:
                     logger.info(f'\tSchedule successful. Job id {job["job"]}')
                 else:
-                    self.fail_sample(item)
+                    self.fail_sample(item, reason='Error getting or creating job to schedule sample.')
 
             except KeyboardInterrupt:
                 logger.warning(f'\tStopping {self.name} due to Keyboard Interrupt')
@@ -74,24 +74,29 @@ class Scheduler(Thread):
                 sleep(1)
 
             except SampleNotFoundException:
-                logger.error(f'\tAcquisition data for sample {item} not found', exc_info=True)
-                self.fail_sample(item, '')
+                msg = f'\tAcquisition data for sample {item} not found'
+                logger.error(msg, exc_info=True)
+                self.fail_sample(item, '', reason=msg)
 
             except CisClientException as ex:
-                logger.error(f'\tCisClient error: {ex.args}', exc_info=True)
-                self.fail_sample(item, '')
+                msg = f'\tCisClient error: {ex.args}'
+                logger.error(msg, exc_info=True)
+                self.fail_sample(item, '', reason=msg)
 
             except NoProfileException as ex:
-                logger.error(f'\tScheduling error: {ex.args}', exc_info=True)
-                self.fail_sample(item, '')
+                msg = f'\tScheduling error: {ex.args}'
+                logger.error(msg, exc_info=True)
+                self.fail_sample(item, '', reason=msg)
 
             except JobDataStoreException as ex:
-                logger.error(f"\tError scheduling job {ex.args}")
-                self.fail_sample(item, '')
+                msg = f'\tError scheduling job {ex.args}'
+                logger.error(msg, exc_info=True)
+                self.fail_sample(item, '', reason=msg)
 
             except Exception as ex:
-                logger.error(f'\tError scheduling sample {item}: {ex.args}', exc_info=True)
-                self.fail_sample(item, '')
+                msg = f'\tError scheduling sample {item}: {ex.args}'
+                logger.error(msg, exc_info=True)
+                self.fail_sample(item, '', reason=msg)
 
             finally:
                 self.schedule_q.task_done()
@@ -165,10 +170,12 @@ class Scheduler(Thread):
 
             return vsorted[0]['version']
 
-    def fail_sample(self, file_basename, extension):
+    def fail_sample(self, file_basename, extension, reason: str):
         try:
             logger.error(f'\tAdd "failed" scheduling status to stasis for sample "{file_basename}"')
-            self.stasis_cli.sample_state_update(file_basename, 'failed', file_handle=f'{file_basename}.{extension}')
+            self.stasis_cli.sample_state_update(file_basename, 'failed',
+                                                file_handle=f'{file_basename}.{extension}',
+                                                reason=reason)
         except Exception as ex:
             logger.error(f'\tStasis client can\'t send "failed" status for sample {file_basename}\n'
                          f'\tResponse: {str(ex)}')

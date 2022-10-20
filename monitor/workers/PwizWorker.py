@@ -108,7 +108,7 @@ class PwizWorker(Thread):
                                       'stdout': cpe.stdout,
                                       'stderr': cpe.stderr})
 
-                        self.fail_sample(file_basename, extension)
+                        self.fail_sample(file_basename, extension, reason=str(cpe))
 
             except KeyboardInterrupt:
                 logger.warning(f'Stopping {self.name} due to Control+C')
@@ -126,7 +126,7 @@ class PwizWorker(Thread):
             except Exception as ex:
                 logger.error(f'Skipping conversion of sample {item} -- Error: {ex.args}')
                 filename, ext = str(item.split(os.sep)[-1]).split('.')
-                self.fail_sample(filename, ext)
+                self.fail_sample(filename, ext, reason=str(ex))
 
             finally:
                 self.conversion_q.task_done()
@@ -154,7 +154,7 @@ class PwizWorker(Thread):
         else:
             # update tracking status
             logger.warning(f'\tSetting {item} as failed')
-            self.fail_sample(file_basename, extension)
+            self.fail_sample(file_basename, extension, reason=result.stdout.decode('ascii'))
 
     def get_file_size(self, path):
         return os.stat(path).st_size
@@ -219,10 +219,10 @@ class PwizWorker(Thread):
                          f'\tResponse: {str(ex)}')
             pass
 
-    def fail_sample(self, file_basename, extension):
+    def fail_sample(self, file_basename, extension, reason: str):
         try:
             logger.error(f'\tAdd "failed" conversion status to stasis for sample "{file_basename}.{extension}"')
-            self.stasis_cli.sample_state_update(file_basename, 'failed')
+            self.stasis_cli.sample_state_update(file_basename, 'failed', reason=reason)
         except Exception as ex:
             logger.error(f'\tStasis client can\'t send "failed" status for sample {file_basename}.{extension}. '
                          f'\tResponse: {str(ex)}')

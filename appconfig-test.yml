@@ -24,10 +24,10 @@ monitor:
   storage: "D:\\data\\mzml"
 
   # Full path to ProteoWizard msconvert tool
-  msconvert: "c:\\tools\\pwiz\\msconvert.exe"
+  msconvert: "c:\\tools\\pwiz-3.0.21209\\msconvert.exe"
 
   # Enables automatic scheduling of converted samples. Default: False
-  schedule: False
+  schedule: True
 
   # Enables checking if sample exists in dynamo before conversion. Default: False
   exists: False
