@@ -1,7 +1,8 @@
 monitor:
   # Raw data folders to monitor
   paths:
-    - "D:\\data\\raw"
+    - "\\\\exploris\\exploris\\data"  # exploris drive
+    - "\\\\dnc3br2\\qexactive\\data"  # QE drive
 
   # Raw data type to monitor
   extensions:
@@ -21,16 +22,16 @@ monitor:
     - 'test'
 
   # Destination folder of converted files
-  storage: "D:\\data\\mzml"
+  storage: "C:\\Windows\\Temp"
 
   # Full path to ProteoWizard msconvert tool
-  msconvert: "c:\\tools\\pwiz-3.0.21209\\msconvert.exe"
+  msconvert: "C:\\tools\\pwiz\\msconvert.exe"
 
   # Enables automatic scheduling of converted samples. Default: False
   schedule: True
 
   # Enables checking if sample exists in dynamo before conversion. Default: False
-  exists: False
+  exists: True
 
 cis:
   url_var: "TEST_CIS_API_URL"

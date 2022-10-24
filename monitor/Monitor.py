@@ -8,7 +8,7 @@ from threading import Thread
 from cisclient.client import CISClient
 from loguru import logger
 from stasis_client.client import StasisClient
-from watchdog.observers import Observer
+from watchdog.observers.polling import PollingObserver
 
 from monitor.RawDataEventHandler import RawDataEventHandler
 from monitor.workers.BucketWorker import BucketWorker
@@ -56,7 +56,7 @@ class Monitor(Thread):
     def run(self):
         """Starts the monitoring of the selected folders"""
 
-        observer = Observer()
+        observer = PollingObserver()
         try:
             # Setup the aws uploader worker
             aws_worker = BucketWorker(self,
@@ -96,21 +96,17 @@ class Monitor(Thread):
             )
 
             for p in self.config['monitor']['paths']:
-                if os.path.exists(p):
+                if os.path.isdir(p):
                     logger.info(f'Adding path {p} to monitor')
                     observer.schedule(event_handler, p, recursive=True)
                 else:
-                    logger.error(f'Cannot find raw data folder {p}. '
-                                 f'Please fix the configuration file and restart the application.')
-                    self.running = False
-                    exit(2)
+                    logger.error(f'Cannot find raw data folder {p}. It will NOT be monitored.')
 
             if self.running:
                 observer.start()
                 logger.info('Monitor started')
 
             while self.running:
-                # pass
                 time.sleep(0.1)
 
         except KeyboardInterrupt:
