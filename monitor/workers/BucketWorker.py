@@ -106,10 +106,10 @@ class BucketWorker(Thread):
 
     def pass_sample(self, file_basename):
         try:
-            logger.info(f'\tAdd "uploaded" status to stasis for sample {file_basename}')
+            logger.info(f'\tAdd "uploaded_raw" status to stasis for sample {file_basename}')
             self.stasis_cli.sample_state_update(file_basename, 'uploaded_raw')
         except Exception as ex:
-            logger.error(f'\tStasis client can\'t send "uploaded" status for sample {file_basename}. '
+            logger.error(f'\tStasis client can\'t send "uploaded_raw" status for sample {file_basename}. '
                          f'\tResponse: {str(ex)}')
 
     def fail_sample(self, file_basename, extension, reason):
