@@ -22,7 +22,7 @@ monitor:
     - 'test'
 
   # Destination folder of converted files
-  storage: 'D:\data\mzml'
+  storage: 'C:\Windows\Temp'
 
   # Full path to ProteoWizard msconvert tool
   msconvert: 'C:\tools\pwiz\msconvert.exe'
