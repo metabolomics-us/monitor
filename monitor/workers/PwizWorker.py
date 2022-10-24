@@ -202,8 +202,8 @@ class PwizWorker(Thread):
 
     def pass_sample_acquired(self, file_basename, extension):
         try:
-            logger.info(f'\tAdd "acquired" status to stasis for sample "{file_basename}.{extension}"')
-            self.stasis_cli.sample_state_update(file_basename, 'acquired', f'{file_basename}.{extension}')
+            logger.info(f'\tAdd "acquired" status to stasis for sample "{file_basename}{extension}"')
+            self.stasis_cli.sample_state_update(file_basename, 'acquired', f'{file_basename}{extension}')
         except Exception as ex:
             logger.error(f'\tStasis client can\'t send "converted" status for sample {file_basename}. '
                          f'\tResponse: {str(ex)}')
@@ -211,8 +211,8 @@ class PwizWorker(Thread):
 
     def pass_sample(self, file_basename, extension):
         try:
-            logger.info(f'\tAdd "converted" status to stasis for sample "{file_basename}.{extension}"')
-            self.stasis_cli.sample_state_update(file_basename, 'converted', f'{file_basename}.{extension}')
+            logger.info(f'\tAdd "converted" status to stasis for sample "{file_basename}{extension}"')
+            self.stasis_cli.sample_state_update(file_basename, 'converted', f'{file_basename}{extension}')
         except Exception as ex:
             logger.error(f'\tStasis client can\'t send "converted" status for sample {file_basename}. '
                          f'\tResponse: {str(ex)}')
@@ -220,10 +220,10 @@ class PwizWorker(Thread):
 
     def fail_sample(self, file_basename, extension, reason: str):
         try:
-            logger.error(f'\tAdd "failed" conversion status to stasis for sample "{file_basename}.{extension}"')
+            logger.error(f'\tAdd "failed" conversion status to stasis for sample "{file_basename}{extension}"')
             self.stasis_cli.sample_state_update(file_basename, 'failed', reason=reason)
         except Exception as ex:
-            logger.error(f'\tStasis client can\'t send "failed" status for sample {file_basename}.{extension}. '
+            logger.error(f'\tStasis client can\'t send "failed" status for sample {file_basename}{extension}. '
                          f'\tResponse: {str(ex)}')
 
     def update_output(self, item):
