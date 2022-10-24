@@ -1,15 +1,15 @@
 monitor:
   # Raw data folders to monitor
   paths:
-    - "\\\\exploris\\exploris\\data"  # exploris drive
-    - "\\\\dnc3br2\\qexactive\\data"  # QE drive
+    - '\\exploris\exploris\data'  # exploris drive
+    - '\\dnc3br2\qexactive\data'  # QE drive
 
   # Raw data type to monitor
   extensions:
-    - ".d"
-    - ".raw"
-    - ".wiff"
-    - ".mzml"
+    - '.d'
+    - '.raw'
+    - '.wiff'
+    - '.mzml'
 
   # regex patterns of samples to skip
   skip:
@@ -22,10 +22,10 @@ monitor:
     - 'test'
 
   # Destination folder of converted files
-  storage: "C:\\Windows\\Temp"
+  storage: 'C:\Windows\Temp'
 
   # Full path to ProteoWizard msconvert tool
-  msconvert: "C:\\tools\\pwiz\\msconvert.exe"
+  msconvert: 'C:\tools\pwiz\msconvert.exe'
 
   # Enables automatic scheduling of converted samples. Default: False
   schedule: True
@@ -34,12 +34,12 @@ monitor:
   exists: True
 
 cis:
-  url_var: "PROD_CIS_API_URL"
-  api_key_var: "PROD_CIS_API_TOKEN"
+  url_var: 'PROD_CIS_API_URL'
+  api_key_var: 'PROD_CIS_API_TOKEN'
 
 stasis:
-  url_var: "PROD_STASIS_API_URL"
-  api_key_var: "PROD_STASIS_API_TOKEN"
+  url_var: 'PROD_STASIS_API_URL'
+  api_key_var: 'PROD_STASIS_API_TOKEN'
 
 aws:
-  bucket_name: "data-carrot"
+  bucket_name: 'data-carrot'

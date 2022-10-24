@@ -44,11 +44,11 @@ class Bucket:
             logger.info(f'\tSaving file {remote_name} on {self.bucket_name}')
             self.s3.Object(self.bucket_name, remote_name).upload_file(filename)
             return remote_name
-        except ConnectionResetError:
-            raise
-        except Exception:
-            raise
-
+        except ConnectionResetError as cre:
+            logger.error('Connection reset.', str(cre))
+            raise cre
+        except Exception as e:
+            raise e
 
     def exists(self, name) -> bool:
         """
@@ -66,6 +66,7 @@ class Bucket:
                 return False
         except Exception as other:
             logger.info(f'Other exception: {str(other)}')
+            raise other
         else:
             return True
 
@@ -78,4 +79,9 @@ class Bucket:
         self.s3.Object(self.bucket_name, name).delete()
 
     def list(self):
+        """
+            lists the files in the raw data bucket
+
+        :return:
+        """
         return boto3.client('s3').list_objects(Bucket=self.bucket_name)

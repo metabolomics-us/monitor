@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 from multiprocessing.queues import Queue
 
 from stasis_client.client import StasisClient
@@ -20,7 +19,7 @@ class RawDataEventHandler(RegexMatchingEventHandler):
         conversion_q: Queue
             Queue of raw data files to be converted to mzml
         extensions: array
-            An array of valid lowercased file extensions (['.d', '.raw', '.wiff', '.mzml])
+            An array of valid lower cased file extensions (['.d', '.raw', '.wiff', '.mzml])
         test: Boolean
             A boolean indicating test run when True
     """

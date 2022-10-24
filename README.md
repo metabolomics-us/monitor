@@ -1,6 +1,7 @@
 # Monitor
 
 A Python file monitor that converts raw data files to mzML format and adds them to Stasis, our processing tracking system.
+This software can only be run on Windows based computers.
 
 #### Supported raw formats
 We use [ProteoWizard](http://proteowizard.sourceforge.net) for the conversion, and use only a subset of ProteoWizard's [supported formats](http://proteowizard.sourceforge.net/formats/index.html)
@@ -8,7 +9,7 @@ We use [ProteoWizard](http://proteowizard.sourceforge.net) for the conversion, a
 - Agilent .d
 - Thermo .raw
 - Waters .raw
-- Open formats
+- Open formats (no need to convert)
     - .mzML
     
 
@@ -18,7 +19,7 @@ Install from source by cloning our repository [source code](https://bitbucket.co
 
     $ git clone git://bitbucket.com/fiehnlab/monitor.git
 
-and running:
+Then run the following to install all the dependencies:
 
     $ cd monitor
     $ pip install -r requirements
@@ -26,9 +27,11 @@ and running:
 
 Python versions 3.8 and newer are supported.
 
+Please adjust the values in appconfig.yml and appconfig-test.yml to match your system and/or needs.
+
 Tests can be run using
 
-    $ pyttest tests
+    $ pytest tests
 
 ## Usage
 
@@ -55,6 +58,7 @@ To terminate the application press: *`Ctrl+C`*
 NOTE: It is suggested to use a 'service wrapper' (like [nssm][1]) to run this app. 
 
 ## Docker
+  NOT FULLY IMPLEMENTED!!!
 
 ### Requirements
 
