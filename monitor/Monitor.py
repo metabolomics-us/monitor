@@ -92,7 +92,8 @@ class Monitor(Thread):
                 self.conversion_q,
                 self.upload_q,
                 self.config['monitor']['extensions'],
-                test=self.config['test']
+                test=self.config['test'],
+                logger=logger
             )
 
             for p in self.config['monitor']['paths']:
