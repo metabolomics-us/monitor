@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from distutils.command.config import config
 import os
 import re
 import subprocess
@@ -188,10 +189,11 @@ class PwizWorker(Thread):
 
         c = 0
         while size < curr:
-            if path.endswith('.d') or path.endswith('.wiff'):
+            logger.info('\t\twaiting for instrument...')
+            if self.config['test']:
                 time.sleep(3)
             else:
-                time.sleep(1)
+                time.sleep(120)
             size = curr
             curr = self.get_folder_size4(path) if os.path.isdir(path) else self.get_file_size(path)
 
