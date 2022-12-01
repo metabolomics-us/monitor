@@ -68,7 +68,7 @@ class BucketWorker(Thread):
 
                 if remote_name:
                     logger.info(f'\tFile {remote_name} saved to {self.bucket.bucket_name}')
-                    self.pass_sample(file_basename)
+                    self.pass_sample(file_basename, extension)
 
                     if self.schedule:
                         logger.info('\tAdding to scheduling queue.')
@@ -104,10 +104,10 @@ class BucketWorker(Thread):
         logger.info(f'\tStopping {self.name}')
         self.join()
 
-    def pass_sample(self, file_basename):
+    def pass_sample(self, file_basename, extension="mzml"):
         try:
-            logger.info(f'\tAdd "uploaded_raw" status to stasis for sample {file_basename}')
-            self.stasis_cli.sample_state_update(file_basename, 'uploaded_raw')
+            logger.info(f'\tAdd "uploaded_raw" status to stasis for sample {file_basename}.{extension}')
+            self.stasis_cli.sample_state_update(file_basename, 'uploaded_raw', f'{file_basename}.mzml')
         except Exception as ex:
             logger.error(f'\tStasis client can\'t send "uploaded_raw" status for sample {file_basename}. '
                          f'\tResponse: {str(ex)}')

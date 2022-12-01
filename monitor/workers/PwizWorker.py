@@ -145,7 +145,7 @@ class PwizWorker(Thread):
         if result.returncode == 0:
             resout = re.search(r'writing output file: (.*?)\n', result.stdout.decode('ascii')).group(1).strip()
 
-            self.pass_sample(file_basename, extension)
+            self.pass_sample(file_basename, "mzml")
 
             # update tracking status and upload to aws
             logger.info(f'\tAdd {resout} to upload queue')
@@ -154,7 +154,7 @@ class PwizWorker(Thread):
         else:
             # update tracking status
             logger.warning(f'\tSetting {item} as failed')
-            self.fail_sample(file_basename, extension, reason=result.stdout.decode('ascii'))
+            self.fail_sample(file_basename, "mzml", reason=result.stdout.decode('ascii'))
 
     def get_file_size(self, path):
         return os.stat(path).st_size
@@ -211,10 +211,10 @@ class PwizWorker(Thread):
                          f'\tResponse: {str(ex)}')
             pass
 
-    def pass_sample(self, file_basename, extension):
+    def pass_sample(self, file_basename, extension="mzml"):
         try:
-            logger.info(f'\tAdd "converted" status to stasis for sample "{file_basename}{extension}"')
-            self.stasis_cli.sample_state_update(file_basename, 'converted', f'{file_basename}{extension}')
+            logger.info(f'\tAdd "converted" status to stasis for sample "{file_basename}.{extension}"')
+            self.stasis_cli.sample_state_update(file_basename, 'converted', f'{file_basename}.{extension}')
         except Exception as ex:
             logger.error(f'\tStasis client can\'t send "converted" status for sample {file_basename}. '
                          f'\tResponse: {str(ex)}')
