@@ -12,5 +12,6 @@ git+https://github.com/metabolomics-us/carpy.git@master#egg=stasis-client&subdir
 
 # test deps
 mock
+moto
 pytest
 setuptools

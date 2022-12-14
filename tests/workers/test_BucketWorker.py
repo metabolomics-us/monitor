@@ -8,7 +8,7 @@ from monitor.Bucket import Bucket
 from monitor.workers.BucketWorker import BucketWorker
 
 
-def test_upload(stasis_cli, wconfig, test_qm):
+def test_upload(mocks, stasis_cli, wconfig, test_qm):
     test_qm.clean(test_qm.upload_q())
 
     mzml_file = 'D:\\data\\mzml\\test.mzml'
@@ -26,7 +26,7 @@ def test_upload(stasis_cli, wconfig, test_qm):
     time.sleep(1)
 
     # process next valid item in queue
-    # boto3.client('sqs').send_message(QueueUrl=test_qm.upload_q(), MEssageBody=test_file, DelaySeconds=0)
+    # boto3.client('sqs').send_message(QueueUrl=test_qm.upload_q(), MessageBody=test_file, DelaySeconds=0)
     test_qm.put_message(test_qm.upload_q(), test_file)
 
     time.sleep(1)

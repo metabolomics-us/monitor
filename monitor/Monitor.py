@@ -13,7 +13,6 @@ from monitor.QueueManager import QueueManager
 from monitor.RawDataEventHandler import RawDataEventHandler
 from monitor.workers.BucketWorker import BucketWorker
 from monitor.workers.PwizWorker import PwizWorker
-from monitor.workers.Scheduler import Scheduler
 
 THREAD_TIMEOUT = 5
 
@@ -58,13 +57,14 @@ class Monitor(Thread):
                                       self.config,
                                       self.queue_mgr)
 
-            scheduler = Scheduler(self,
-                                  self.stasis_cli,
-                                  self.cis_cli,
-                                  self.config,
-                                  self.queue_mgr)
+            # scheduler = Scheduler(self,
+            #                       self.stasis_cli,
+            #                       self.cis_cli,
+            #                       self.config,
+            #                       self.queue_mgr)
 
-            threads = [aws_worker, scheduler]
+            # threads = [aws_worker, scheduler]
+            threads = [aws_worker]
 
             # Setup the pwiz workers
             [threads.append(

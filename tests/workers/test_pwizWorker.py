@@ -1,5 +1,6 @@
 import os
 import tempfile
+import time
 
 from loguru import logger
 
@@ -8,7 +9,7 @@ from monitor.workers.PwizWorker import PwizWorker
 agi_file = os.path.join(os.path.dirname(__file__), '..', '..', 'resources', 'monitored.d')
 
 
-def test_pwizworker(stasis_cli, wconfig, test_qm):
+def test_pwizworker(mocks, stasis_cli, wconfig, test_qm):
     test_qm.clean(test_qm.conversion_q())
     test_qm.clean(test_qm.upload_q())
 
@@ -31,12 +32,13 @@ def test_pwizworker(stasis_cli, wconfig, test_qm):
 
     test_file = os.path.join(tempfile.tempdir, f'monitored.mzml')
     assert os.path.exists(test_file)
+    time.sleep(1)
     os.remove(test_file)
 
     assert test_qm.get_size(test_qm.upload_q()) == 1
 
 
-def test_pwizworker_conversion_skipping(stasis_cli, wconfig, test_qm):
+def test_pwizworker_conversion_skipping(mocks, stasis_cli, wconfig, test_qm):
     # to avoid the 60 second wait time between SQS purges
     start_count = test_qm.get_size(test_qm.upload_q())
 

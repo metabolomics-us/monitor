@@ -1,6 +1,9 @@
 import os
 import shutil
+import time
 
+import boto3
+import moto
 import pytest
 import yamlconf
 from cisclient.client import CISClient
@@ -15,6 +18,40 @@ def pytest_generate_tests(metafunc):
     os.environ['TEST_CIS_API_TOKEN'] = 'pniczYK74C6QvIPE4ZTyiL2H1oCbLFi1qMpyXshb'
     os.environ['TEST_STASIS_API_URL'] = 'https://test-api.metabolomics.us/stasis'
     os.environ['TEST_STASIS_API_TOKEN'] = 'pniczYK74C6QvIPE4ZTyiL2H1oCbLFi1qMpyXshb'
+    os.environ['monitor_conversion_queue'] = 'MonitorConversionQueue-test'
+    os.environ['monitor_upload_queue'] = 'MonitorUploadQueue-test'
+    os.environ['monitor_preprocess_queue'] = 'MonitorPreprocessingQueue-test'
+    os.environ['AWS_ACCESS_KEY_ID'] = 'testing'
+    os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
+    os.environ['AWS_SECURITY_TOKEN'] = 'testing'
+    os.environ['AWS_SESSION_TOKEN'] = 'testing'
+    os.environ["AWS_DEFAULT_REGION"] = 'us-west-2'
+
+
+@pytest.fixture
+def mocks():
+    s3 = moto.mock_s3()
+    s3.start()
+
+    sqs = moto.mock_sqs()
+    sqs.start()
+
+    ress3 = boto3.client('s3')
+    ress3.create_bucket(Bucket='datatest-carrot',
+                        CreateBucketConfiguration={'LocationConstraint': 'us-west-2'})
+
+    ressqs = boto3.resource('sqs')
+    ressqs.create_queue(QueueName=os.environ["monitor_conversion_queue"])
+    time.sleep(1)
+    ressqs.create_queue(QueueName=os.environ["monitor_upload_queue"])
+    time.sleep(1)
+    ressqs.create_queue(QueueName=os.environ["monitor_preprocess_queue"])
+    time.sleep(1)
+
+    yield
+    sqs.stop()
+    s3.stop()
+    pass
 
 
 def cc(filepath):
@@ -53,5 +90,5 @@ def raw(config):
 
 
 @pytest.fixture
-def test_qm():
+def test_qm(mocks):
     return QueueManager(stage='test')
