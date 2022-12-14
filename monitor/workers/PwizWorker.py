@@ -4,14 +4,16 @@
 import os
 import re
 import subprocess
+import tempfile
 import time
 from os.path import getsize, join
 from pathlib import Path
-from queue import Queue
 from threading import Thread, Lock, local
 
 from loguru import logger
 from stasis_client.client import StasisClient
+
+from monitor.QueueManager import QueueManager
 
 
 class PwizWorker(Thread):
@@ -20,8 +22,8 @@ class PwizWorker(Thread):
     """
 
     def __init__(self, parent, st_cli: StasisClient,
-                 conversion_q: Queue, upload_q: Queue,
-                 config, name='Converter0', daemon=True):
+                 queue_mgr: QueueManager, config,
+                 name='Converter0', daemon=True):
         """
 
         Args:
@@ -29,10 +31,8 @@ class PwizWorker(Thread):
                 Instance parent object
             st_cli: StasisClient
                 A stasis client instance
-            conversion_q: Queue
-                A queue that contains the filenames to be converted
-            upload_q: Queue
-                A queue that contains the filenames to be uploaded
+            queue_mgr: QueueManager
+                A QueueManager object that handles setting up queues and sending/receiving messages
             config:
                 An object containing config settings
             name: str (Optional. Default: Converter0)
@@ -42,11 +42,11 @@ class PwizWorker(Thread):
 
         """
         super().__init__(name=name, daemon=daemon)
+
         self.parent = parent
         self.running = False
+        self.queue_mgr = queue_mgr
         self.stasis_cli = st_cli
-        self.conversion_q = conversion_q
-        self.upload_q = upload_q
         self.config = config
         self.storage = config['monitor']['storage'] if config['monitor']['storage'].endswith(os.path.sep) else \
             config['monitor']['storage'] + os.path.sep
@@ -68,13 +68,17 @@ class PwizWorker(Thread):
 
         while self.running:
             try:
-                item = self.conversion_q.get()
+                item = self.queue_mgr.get_next_message(self.queue_mgr.conversion_q())
+                if not item:
+                    logger.debug('\twaiting...')
+                    time.sleep(2.7)
+                    continue
 
                 logger.info(f'Starting conversion of {item}')
 
                 splits = str(item.split(os.sep)[-1]).rsplit('.', 1)
                 file_basename = splits[0]
-                extension = '.' + splits[1] if len(splits) == 2 else ''
+                extension = splits[1] if len(splits) == 2 else ''
 
                 result = [re.search(x, item) is not None for x in self.config['monitor']['skip']]
                 if any(result):
@@ -90,7 +94,7 @@ class PwizWorker(Thread):
                 self.wait_for_item(item)
 
                 if item.endswith('.mzml'):
-                    self.upload_q.put_nowait(item)
+                    self.queue_mgr.put_message(self.queue_mgr.upload_q, item)
                 else:
                     # add acquired status
                     self.pass_sample_acquired(file_basename, extension)
@@ -112,10 +116,6 @@ class PwizWorker(Thread):
             except KeyboardInterrupt:
                 logger.warning(f'Stopping {self.name} due to Control+C')
                 self.running = False
-                self.conversion_q.queue.clear()
-                self.upload_q.queue.clear()
-                self.conversion_q.join()
-                self.upload_q.join()
                 self.parent.join_threads()
 
             except IndexError as ex:
@@ -128,27 +128,37 @@ class PwizWorker(Thread):
                 self.fail_sample(filename, ext, reason=str(ex))
 
             finally:
-                self.conversion_q.task_done()
-                logger.info(f'Conversion queue size: {self.conversion_q.qsize()}')
+                size = self.queue_mgr.get_size(self.queue_mgr.conversion_q())
+                logger.info(f'Conversion queue size: {size}')
 
         logger.info(f'\tStopping {self.name}')
         self.join()
 
     def convert(self, file_basename, extension, item):
-        args = local()
-        storage = self.update_output(item)
-        args = [self.runner, item, *self.args, storage.lower()]
+        """
+        Converts a sample
+        Args:
+            file_basename: sample's filename (no extension)
+            extension: sample's extension
+            item: full sample name
 
-        logger.info(f'\tRunning ProteoWizard: {args}')
-        result = subprocess.run(args, stdout=subprocess.PIPE, check=True)
+        Returns:
+
+        """
+        # pw_args = local()
+        storage = tempfile.tempdir
+        pw_args = [self.runner, item, *self.args, storage.lower()]
+
+        logger.info(f'\tRunning ProteoWizard: {pw_args}')
+        result = subprocess.run(pw_args, stdout=subprocess.PIPE, check=True)
         if result.returncode == 0:
             resout = re.search(r'writing output file: (.*?)\n', result.stdout.decode('ascii')).group(1).strip()
 
+            # update tracking status and upload to aws
             self.pass_sample(file_basename, extension)
 
-            # update tracking status and upload to aws
             logger.info(f'\tAdd {resout} to upload queue')
-            self.upload_q.put_nowait(resout)
+            self.queue_mgr.put_message(self.queue_mgr.upload_q(), resout)
 
         else:
             # update tracking status
@@ -203,7 +213,8 @@ class PwizWorker(Thread):
     def pass_sample_acquired(self, file_basename, extension):
         try:
             logger.info(f'\tAdd "acquired" status to stasis for sample "{file_basename}.{extension}"')
-            self.stasis_cli.sample_state_update(file_basename, 'acquired', f'{file_basename}.{extension}')
+            resp = self.stasis_cli.sample_state_update(file_basename, 'acquired', f'{file_basename}.{extension}')
+            logger.info('PASSED ACQUIRED in', resp)
         except Exception as ex:
             logger.error(f'\tStasis client can\'t send "converted" status for sample {file_basename}. '
                          f'\tResponse: {str(ex)}')

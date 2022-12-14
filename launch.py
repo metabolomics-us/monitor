@@ -5,7 +5,6 @@ import argparse
 import json
 import os
 import sys
-from queue import Queue
 
 import yamlconf
 from cisclient.client import CISClient
@@ -14,11 +13,13 @@ from loguru import logger
 from stasis_client.client import StasisClient
 
 from monitor.Monitor import Monitor
+from monitor.QueueManager import QueueManager
 
 logger.remove()
 fmt = "<level>{level: <7}</level> | <g>{time:YYYY-MM-DD hh:mm:ss}</g> | <m>{thread.name: <10}</m> | " \
       "<c>{file: >20} ({line: >3}) {function: <20}</c> | {message}"
 logger.add(sys.stderr, format=fmt, level="INFO")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -37,7 +38,9 @@ if __name__ == "__main__":
     else:
         configFile = 'appconfig.yml'
 
+    stage = 'prod'
     if args.test:
+        stage = 'test'
         configFile = 'appconfig-test.yml'
         logger.warning('\nRunning in TEST mode !!!\n')
 
@@ -71,9 +74,6 @@ if __name__ == "__main__":
         stasis_cli.logger.level = 'DEBUG'
         cis_logger.level = 'DEBUG'
 
-    conv_q = Queue()
-    aws_q = Queue()
-    sched_q = Queue()
+    queue_mgr = QueueManager(stage)
 
-    Monitor(config, stasis_cli, cis_cli, conv_q, aws_q, sched_q).run()
-
+    Monitor(config, stasis_cli, cis_cli, queue_mgr).run()

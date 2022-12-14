@@ -2,14 +2,16 @@
 # -*- coding: utf-8 -*-
 
 import os
+import tempfile
 import time
-from queue import Queue
 from threading import Thread
 
+import boto3
 from loguru import logger
 from stasis_client.client import StasisClient
 
 from monitor.Bucket import Bucket
+from monitor.QueueManager import QueueManager
 
 
 class BucketWorker(Thread):
@@ -18,7 +20,7 @@ class BucketWorker(Thread):
     """
 
     def __init__(self, parent, stasis: StasisClient, config,
-                 up_q: Queue, sched_q: Queue,
+                 queue_mgr: QueueManager,
                  name='Uploader0', daemon=True):
         """
 
@@ -29,39 +31,43 @@ class BucketWorker(Thread):
                 A stasis client instance
             config:
                 An object containing config settings
-            up_q: Queue
-                A queue that contains the filenames to be uploaded
-            sched_q: Queue
-                A queue that contains the samples to be auto-scheduled
+            queue_mgr: QueueManager
+                A QueueManager object that handles setting up queues and sending/receiving messages
             name: str (Optional. Default: Uploader0)
                 Name of the worker instance
             daemon:
                 Run the worker as daemon. (Optional. Default: True)
         """
         super().__init__(name=name, daemon=daemon)
+        self.sqs = boto3.client('sqs')
+
         self.parent = parent
-        self.bucket = Bucket(config['aws']['bucket_name'])
-        self.upload_q = up_q
-        self.schedule_q = sched_q
         self.running = False
+        self.queue_mgr = queue_mgr
+        self.bucket = Bucket(config['aws']['bucket_name'])
         self.stasis_cli = stasis
-        self.storage = config['monitor']['storage']
+        self.storage = tempfile.tempdir
         self.schedule = config['monitor']['schedule']
         self.test = config['test']
 
     def run(self):
         """Starts the Uploader Worker"""
+        self.running = True
+
         item = None
         file_basename = None
         extension = None
 
-        self.running = True
-
         while self.running:
             try:
-                item = self.upload_q.get()
+                item = self.queue_mgr.get_next_message(self.queue_mgr.upload_q())
+                if not item:
+                    logger.debug('\twaiting...')
+                    time.sleep(2.7)
+                    continue
 
                 file_basename, extension = str(item.split(os.sep)[-1]).rsplit('.', 1)
+                logger.info(f'{file_basename} -- {extension}')
 
                 logger.info(f'Uploading {item} ({os.path.getsize(item)} bytes) to {self.bucket.bucket_name}')
                 remote_name = self.bucket.save(item)
@@ -72,7 +78,7 @@ class BucketWorker(Thread):
 
                     if self.schedule:
                         logger.info('\tAdding to scheduling queue.')
-                        self.schedule_q.put_nowait(file_basename)
+                        self.queue_mgr.put_message(self.queue_mgr.preprocess_q(), file_basename)
                 else:
                     self.fail_sample(file_basename, 'mzml',
                                      reason='some unknown error happened while uploading the file')
@@ -84,10 +90,6 @@ class BucketWorker(Thread):
             except KeyboardInterrupt:
                 logger.warning(f'\tStopping {self.name} due to Control+C')
                 self.running = False
-                self.schedule_q.queue.clear()
-                self.upload_q.queue.clear()
-                self.schedule_q.join()
-                self.upload_q.join()
                 self.parent.join_threads()
 
             except IndexError:
@@ -98,8 +100,7 @@ class BucketWorker(Thread):
                 self.fail_sample(file_basename, 'mzml', reason=str(ex))
 
             finally:
-                self.upload_q.task_done()
-                logger.info(f'Uploader queue size: {self.upload_q.qsize()}')
+                logger.info(f'Uploader queue size: {self.queue_mgr.get_size(self.queue_mgr.upload_q())}')
 
         logger.info(f'\tStopping {self.name}')
         self.join()

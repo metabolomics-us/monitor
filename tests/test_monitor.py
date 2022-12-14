@@ -2,8 +2,9 @@ import os
 import shutil
 import time
 from os import path
-from queue import Queue
 from threading import Thread
+
+import boto3
 
 from monitor.Monitor import Monitor
 
@@ -25,9 +26,11 @@ def test_start(config, stasis_cli, cis_cli):
     __delete_files(path.join(config['monitor']['paths'][0], 'extra'))
     __delete_files(path.join(config['monitor']['storage'], 'autoconv'))
 
-    conv_q = Queue()
-    aws_q = Queue()
-    sched_q = Queue()
+    sqs = boto3.client('sqs')
+
+    conv_q = sqs.get_queue_url(QueueName='MonitorConversionQueue-test')
+    aws_q = sqs.get_queue_url(QueueName='MonitorUploadQueue-test')
+    sched_q = sqs.get_queue_url(QueueName='MonitorPreprocessingQueue-test')
 
     filemon = Monitor(config, stasis_cli, cis_cli, conv_q, aws_q, sched_q)
 
