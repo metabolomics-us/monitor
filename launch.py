@@ -55,12 +55,12 @@ if __name__ == "__main__":
         exit(1)
 
     stasis_cli = StasisClient(os.getenv(config['stasis']['url_var'], "https://test-api.metabolomics.us/stasis"),
-                              os.getenv(config['stasis']['api_key_var'], "9MjbJRbAtj8spCJJVTPbP3YWc4wjlW0c7AP47Pmi"))
+                              os.getenv(config['stasis']['api_key_var'], "s45LgmYFPv8NbzVUbcIfRQI6NWlF7W09TUUMavx5"))
     if stasis_cli:
         logger.info(f'Stasis client initialized. (url: {stasis_cli._url})')
 
     cis_cli = CISClient(os.getenv(config['cis']['url_var'], "https://test-api.metabolomics.us/cis"),
-                        os.getenv(config['cis']['api_key_var'], "9MjbJRbAtj8spCJJVTPbP3YWc4wjlW0c7AP47Pmi"))
+                        os.getenv(config['cis']['api_key_var'], "s45LgmYFPv8NbzVUbcIfRQI6NWlF7W09TUUMavx5"))
 
     if cis_cli:
         logger.info(f'Cis client initialized. (url: {cis_cli._url})')

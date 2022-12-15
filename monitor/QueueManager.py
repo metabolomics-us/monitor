@@ -12,7 +12,6 @@ class QueueManager:
     def __init__(self, stage: str):
         self.stage = stage
         self.sqs = boto3.client('sqs')
-        print(f'Creating QueueManager for stage {stage}')
 
     def conversion_q(self):
         return self.__get_queue(CONVERSION_QUEUE + '-' + self.stage)['QueueUrl']

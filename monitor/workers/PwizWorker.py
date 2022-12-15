@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
+import logging
 import os
 import re
 import subprocess
@@ -21,8 +21,7 @@ class PwizWorker(Thread):
     Worker class that converts a raw data file to mzml
     """
 
-    def __init__(self, parent, st_cli: StasisClient,
-                 queue_mgr: QueueManager, config,
+    def __init__(self, parent, st_cli: StasisClient, queue_mgr: QueueManager, config,
                  name='Converter0', daemon=True):
         """
 
@@ -71,13 +70,12 @@ class PwizWorker(Thread):
                 item = self.queue_mgr.get_next_message(self.queue_mgr.conversion_q())
                 if not item:
                     logger.debug('\twaiting...')
-                    time.sleep(2.7)
+                    time.sleep(1.7)
                     continue
-
-                logger.info(f'Starting conversion of {item}')
 
                 splits = str(item.split(os.sep)[-1]).rsplit('.', 1)
                 file_basename = splits[0]
+                logging.debug(f'base: {file_basename}')
                 extension = splits[1] if len(splits) == 2 else ''
 
                 result = [re.search(x, item) is not None for x in self.config['monitor']['skip']]
@@ -87,9 +85,12 @@ class PwizWorker(Thread):
 
                 # check if sample exists in stasis first
                 if self.config['monitor']['exists']:
+                    logging.debug(f"Skipping non-existent files")
                     if not self.stasis_cli.sample_acquisition_exists(file_basename):
                         logger.info('File not in stasis, skipping.')
                         continue
+
+                logger.info(f'Starting conversion of {item}')
 
                 self.wait_for_item(item)
 
@@ -97,7 +98,7 @@ class PwizWorker(Thread):
                     self.queue_mgr.put_message(self.queue_mgr.upload_q, item)
                 else:
                     # add acquired status
-                    self.pass_sample_acquired(file_basename, extension)
+                    self.pass_sample('acquired', file_basename, extension)
 
                     # try conversion and update status
                     try:
@@ -146,16 +147,18 @@ class PwizWorker(Thread):
 
         """
         # pw_args = local()
-        storage = tempfile.tempdir
+        storage = tempfile.gettempdir()
+
         pw_args = [self.runner, item, *self.args, storage.lower()]
 
         logger.info(f'\tRunning ProteoWizard: {pw_args}')
         result = subprocess.run(pw_args, stdout=subprocess.PIPE, check=True)
+
         if result.returncode == 0:
             resout = re.search(r'writing output file: (.*?)\n', result.stdout.decode('ascii')).group(1).strip()
 
             # update tracking status and upload to aws
-            self.pass_sample(file_basename, extension)
+            self.pass_sample('converted', file_basename, extension)
 
             logger.info(f'\tAdd {resout} to upload queue')
             self.queue_mgr.put_message(self.queue_mgr.upload_q(), resout)
@@ -210,22 +213,12 @@ class PwizWorker(Thread):
             elif c == 5:
                 break
 
-    def pass_sample_acquired(self, file_basename, extension):
+    def pass_sample(self, status, file_basename, extension):
         try:
-            logger.info(f'\tAdd "acquired" status to stasis for sample "{file_basename}.{extension}"')
-            resp = self.stasis_cli.sample_state_update(file_basename, 'acquired', f'{file_basename}.{extension}')
-            logger.info('PASSED ACQUIRED in', resp)
+            logger.info(f'\tAdd "{status}" status to stasis for sample "{file_basename}.{extension}"')
+            self.stasis_cli.sample_state_update(file_basename, status, f'{file_basename}.{extension}')
         except Exception as ex:
-            logger.error(f'\tStasis client can\'t send "converted" status for sample {file_basename}. '
-                         f'\tResponse: {str(ex)}')
-            pass
-
-    def pass_sample(self, file_basename, extension):
-        try:
-            logger.info(f'\tAdd "converted" status to stasis for sample "{file_basename}.{extension}"')
-            self.stasis_cli.sample_state_update(file_basename, 'converted', f'{file_basename}.{extension}')
-        except Exception as ex:
-            logger.error(f'\tStasis client can\'t send "converted" status for sample {file_basename}. '
+            logger.error(f'\tStasis client can\'t send "{status}" status for sample {file_basename}. '
                          f'\tResponse: {str(ex)}')
             pass
 
