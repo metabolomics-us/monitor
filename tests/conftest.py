@@ -7,7 +7,6 @@ import moto
 import pytest
 import yamlconf
 from cisclient.client import CISClient
-from loguru import logger
 from stasis_client.client import StasisClient
 
 from monitor.QueueManager import QueueManager
@@ -15,11 +14,11 @@ from monitor.QueueManager import QueueManager
 
 def pytest_generate_tests(metafunc):
     os.environ['TEST_CIS_API_URL'] = 'https://test-api.metabolomics.us/cis'
-    os.environ['TEST_CIS_API_TOKEN'] = 'pniczYK74C6QvIPE4ZTyiL2H1oCbLFi1qMpyXshb'
+    os.environ['TEST_CIS_API_TOKEN'] = 's45LgmYFPv8NbzVUbcIfRQI6NWlF7W09TUUMavx5'
     os.environ['TEST_STASIS_API_URL'] = 'https://test-api.metabolomics.us/stasis'
-    os.environ['TEST_STASIS_API_TOKEN'] = 'pniczYK74C6QvIPE4ZTyiL2H1oCbLFi1qMpyXshb'
-    os.environ['monitor_conversion_queue'] = 'MonitorConversionQueue-test'
+    os.environ['TEST_STASIS_API_TOKEN'] = 's45LgmYFPv8NbzVUbcIfRQI6NWlF7W09TUUMavx5'
     os.environ['monitor_upload_queue'] = 'MonitorUploadQueue-test'
+    os.environ['monitor_conversion_queue'] = 'MonitorConversionQueue-test'
     os.environ['monitor_preprocess_queue'] = 'MonitorPreprocessingQueue-test'
     os.environ['AWS_ACCESS_KEY_ID'] = 'testing'
     os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
@@ -54,8 +53,7 @@ def mocks():
     pass
 
 
-def cc(filepath):
-    print(os.getcwd())
+def load_config(filepath):
     with open(filepath, 'r') as conf:
         conf = yamlconf.load(conf)
         conf['test'] = True
@@ -63,19 +61,13 @@ def cc(filepath):
 
 
 @pytest.fixture
-def config():
-    return cc('appconfig-test.yml')
-
-
-@pytest.fixture
 def wconfig():
-    return cc('appconfig-test.yml')
+    return load_config('appconfig-test.yml')
 
 
 @pytest.fixture
 def stasis_cli():
     stasis_cli = StasisClient(os.getenv('TEST_STASIS_API_URL'), os.getenv('TEST_STASIS_API_TOKEN'))
-    logger.info(f'STASIS URL: {stasis_cli._url} -- STASIS TOKEN: {stasis_cli._token}')
     return stasis_cli
 
 

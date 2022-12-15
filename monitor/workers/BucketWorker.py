@@ -63,7 +63,7 @@ class BucketWorker(Thread):
                 item = self.queue_mgr.get_next_message(self.queue_mgr.upload_q())
                 if not item:
                     logger.debug('\twaiting...')
-                    time.sleep(2.7)
+                    time.sleep(1.7)
                     continue
 
                 file_basename, extension = str(item.split(os.sep)[-1]).rsplit('.', 1)
@@ -84,6 +84,8 @@ class BucketWorker(Thread):
                     self.fail_sample(file_basename, 'mzml',
                                      reason='some unknown error happened while uploading the file')
 
+                logger.info(f'Uploader queue size: {self.queue_mgr.get_size(self.queue_mgr.upload_q())}')
+
             except ConnectionResetError as cre:
                 logger.error(f'\tConnection Reset: {cre.strerror} uploading {cre.filename}')
                 self.fail_sample(file_basename, 'mzml', reason=str(cre))
@@ -101,7 +103,8 @@ class BucketWorker(Thread):
                 self.fail_sample(file_basename, 'mzml', reason=str(ex))
 
             finally:
-                logger.info(f'Uploader queue size: {self.queue_mgr.get_size(self.queue_mgr.upload_q())}')
+                pass
+                # logger.info(f'Uploader queue size: {self.queue_mgr.get_size(self.queue_mgr.upload_q())}')
 
         logger.info(f'\tStopping {self.name}')
         self.join()
