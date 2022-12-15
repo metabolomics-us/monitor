@@ -10,7 +10,6 @@ from os.path import getsize, join
 from pathlib import Path
 from threading import Thread, Lock, local
 
-from loguru import logger
 from stasis_client.client import StasisClient
 
 from monitor.QueueManager import QueueManager
@@ -69,7 +68,7 @@ class PwizWorker(Thread):
             try:
                 item = self.queue_mgr.get_next_message(self.queue_mgr.conversion_q())
                 if not item:
-                    logger.debug('\twaiting...')
+                    logging.debug('\twaiting...')
                     time.sleep(1.7)
                     continue
 
@@ -80,17 +79,17 @@ class PwizWorker(Thread):
 
                 result = [re.search(x, item) is not None for x in self.config['monitor']['skip']]
                 if any(result):
-                    logger.info(f'\tSkipping conversion of invalid sample: {item}.')
+                    logging.info(f'\tSkipping conversion of invalid sample: {item}.')
                     continue
 
                 # check if sample exists in stasis first
                 if self.config['monitor']['exists']:
                     logging.debug(f"Skipping non-existent files")
                     if not self.stasis_cli.sample_acquisition_exists(file_basename):
-                        logger.info('File not in stasis, skipping.')
+                        logging.info('File not in stasis, skipping.')
                         continue
 
-                logger.info(f'Starting conversion of {item}')
+                logging.info(f'Starting conversion of {item}')
 
                 self.wait_for_item(item)
 
@@ -105,8 +104,8 @@ class PwizWorker(Thread):
                         self.convert(file_basename, extension, item)
 
                     except subprocess.CalledProcessError as cpe:
-                        logger.warning(f'Conversion of {item} failed.')
-                        logger.error({'command': cpe.cmd,
+                        logging.warning(f'Conversion of {item} failed.')
+                        logging.error({'command': cpe.cmd,
                                       'exit_code': cpe.returncode,
                                       'output': cpe.output,
                                       'stdout': cpe.stdout,
@@ -115,28 +114,28 @@ class PwizWorker(Thread):
                         self.fail_sample(file_basename, extension, reason=str(cpe))
 
                 size = self.queue_mgr.get_size(self.queue_mgr.conversion_q())
-                logger.info(f'Conversion queue size: {size}')
+                logging.info(f'Conversion queue size: {size}')
 
             except KeyboardInterrupt:
-                logger.warning(f'Stopping {self.name} due to Control+C')
+                logging.warning(f'Stopping {self.name} due to Control+C')
                 self.running = False
                 self.parent.join_threads()
 
             except IndexError as ex:
-                logger.error(str(ex))
+                logging.error(str(ex))
                 time.sleep(1)
 
             except Exception as ex:
-                logger.error(f'Skipping conversion of sample {item} -- Error: {ex.args}')
+                logging.error(f'Skipping conversion of sample {item} -- Error: {ex.args}')
                 filename, ext = str(item.split(os.sep)[-1]).split('.')
                 self.fail_sample(filename, ext, reason=str(ex))
 
             finally:
                 pass
                 # size = self.queue_mgr.get_size(self.queue_mgr.conversion_q())
-                # logger.info(f'Conversion queue size: {size}')
+                # logging.info(f'Conversion queue size: {size}')
 
-        logger.info(f'\tStopping {self.name}')
+        logging.info(f'\tStopping {self.name}')
         self.join()
 
     def convert(self, file_basename, extension, item):
@@ -155,7 +154,7 @@ class PwizWorker(Thread):
 
         pw_args = [self.runner, item, *self.args, storage.lower()]
 
-        logger.info(f'\tRunning ProteoWizard: {pw_args}')
+        logging.info(f'\tRunning ProteoWizard: {pw_args}')
         result = subprocess.run(pw_args, stdout=subprocess.PIPE, check=True)
 
         if result.returncode == 0:
@@ -164,12 +163,12 @@ class PwizWorker(Thread):
             # update tracking status and upload to aws
             self.pass_sample('converted', file_basename, extension)
 
-            logger.info(f'\tAdd {resout} to upload queue')
+            logging.info(f'\tAdd {resout} to upload queue')
             self.queue_mgr.put_message(self.queue_mgr.upload_q(), resout)
 
         else:
             # update tracking status
-            logger.warning(f'\tSetting {item} as failed')
+            logging.warning(f'\tSetting {item} as failed')
             self.fail_sample(file_basename, "mzml", reason=result.stdout.decode('ascii'))
 
     def get_file_size(self, path):
@@ -178,7 +177,7 @@ class PwizWorker(Thread):
     def get_folder_size2(self, path):
         folder_size = 0
         for (path, dirs, files) in os.walk(path):
-            logger.debug(f'\tscanning {path}')
+            logging.debug(f'\tscanning {path}')
             for file in files:
                 filename = os.path.join(path, file)
                 folder_size += os.path.getsize(filename)
@@ -205,7 +204,7 @@ class PwizWorker(Thread):
 
         c = 0
         while size < curr:
-            logger.info('\t\twaiting for instrument...')
+            logging.info('\t\twaiting for instrument...')
             if self.config['test']:
                 time.sleep(3)
             else:
@@ -220,19 +219,19 @@ class PwizWorker(Thread):
 
     def pass_sample(self, status, file_basename, extension):
         try:
-            logger.info(f'\tAdd "{status}" status to stasis for sample "{file_basename}.{extension}"')
+            logging.info(f'\tAdd "{status}" status to stasis for sample "{file_basename}.{extension}"')
             self.stasis_cli.sample_state_update(file_basename, status, f'{file_basename}.{extension}')
         except Exception as ex:
-            logger.error(f'\tStasis client can\'t send "{status}" status for sample {file_basename}. '
+            logging.error(f'\tStasis client can\'t send "{status}" status for sample {file_basename}. '
                          f'\tResponse: {str(ex)}')
             pass
 
     def fail_sample(self, file_basename, extension, reason: str):
         try:
-            logger.error(f'\tAdd "failed" conversion status to stasis for sample "{file_basename}{extension}"')
+            logging.error(f'\tAdd "failed" conversion status to stasis for sample "{file_basename}{extension}"')
             self.stasis_cli.sample_state_update(file_basename, 'failed', reason=reason)
         except Exception as ex:
-            logger.error(f'\tStasis client can\'t send "failed" status for sample {file_basename}{extension}. '
+            logging.error(f'\tStasis client can\'t send "failed" status for sample {file_basename}{extension}. '
                          f'\tResponse: {str(ex)}')
 
     def update_output(self, item):
@@ -245,6 +244,6 @@ class PwizWorker(Thread):
         else:
             storage = self.storage + 'autoconv' + os.path.sep
 
-        logger.info(f'\tSet conversion output folder to: {storage}')
+        logging.info(f'\tSet conversion output folder to: {storage}')
         os.makedirs(storage, exist_ok=True)
         return storage

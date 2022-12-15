@@ -1,3 +1,4 @@
+import logging
 import time
 from threading import Thread
 from time import sleep
@@ -6,7 +7,6 @@ import boto3
 import simplejson as json
 from cisclient.client import CISClient
 from cisclient.exceptions import CisClientException
-from loguru import logger
 from stasis_client.client import StasisClient
 
 from monitor.QueueManager import QueueManager
@@ -57,22 +57,22 @@ class Scheduler(Thread):
             try:
                 item = self.queue_mgr.get_next_message(self.queue_mgr.preprocess_q())
                 if not item:
-                    logger.debug('\twaiting...')
+                    logging.debug('\twaiting...')
                     time.sleep(2.7)
                     continue
 
-                logger.info(f'Scheduling sample with id {item}')
+                logging.info(f'Scheduling sample with id {item}')
 
                 job = self.schedule_sample(item)
-                logger.info(f'\tJob id: {job}')
+                logging.info(f'\tJob id: {job}')
 
                 if job:
-                    logger.info(f'\tSchedule successful. Job id {job["job"]}')
+                    logging.info(f'\tSchedule successful. Job id {job["job"]}')
                 else:
                     self.fail_sample(item, reason='Error getting or creating job to schedule sample.')
 
             except KeyboardInterrupt:
-                logger.warning(f'\tStopping {self.name} due to Keyboard Interrupt')
+                logging.warning(f'\tStopping {self.name} due to Keyboard Interrupt')
                 self.running = False
                 self.parent.join_threads()
 
@@ -81,33 +81,33 @@ class Scheduler(Thread):
 
             except SampleNotFoundException:
                 msg = f'\tAcquisition data for sample {item} not found'
-                logger.error(msg, exc_info=True)
+                logging.error(msg, exc_info=True)
                 self.fail_sample(item, '', reason=msg)
 
             except CisClientException as ex:
                 msg = f'\tCisClient error: {ex.args}'
-                logger.error(msg, exc_info=True)
+                logging.error(msg, exc_info=True)
                 self.fail_sample(item, '', reason=msg)
 
             except NoProfileException as ex:
                 msg = f'\tScheduling error: {ex.args}'
-                logger.error(msg, exc_info=True)
+                logging.error(msg, exc_info=True)
                 self.fail_sample(item, '', reason=msg)
 
             except JobDataStoreException as ex:
                 msg = f'\tError scheduling job {ex.args}'
-                logger.error(msg, exc_info=True)
+                logging.error(msg, exc_info=True)
                 self.fail_sample(item, '', reason=msg)
 
             except Exception as ex:
                 msg = f'\tError scheduling sample {item}: {ex.args}'
-                logger.error(msg, exc_info=True)
+                logging.error(msg, exc_info=True)
                 self.fail_sample(item, '', reason=msg)
 
             finally:
-                logger.info(f'Scheduler queue size: {self.queue_mgr.get_size(self.queue_mgr.preprocess_q())}')
+                logging.info(f'Scheduler queue size: {self.queue_mgr.get_size(self.queue_mgr.preprocess_q())}')
 
-        logger.info(f'Stopping {self.name}')
+        logging.info(f'Stopping {self.name}')
         self.join()
 
     def schedule_sample(self, sample_id):
@@ -117,13 +117,13 @@ class Scheduler(Thread):
             # get sample data.
             sample_data = self.stasis_cli.sample_acquisition_get(sample_id)
 
-            logger.debug(json.dumps(sample_data, indent=2))
+            logging.debug(json.dumps(sample_data, indent=2))
 
         except Exception as ex:
             if 'acquisition data not found' in str(ex):
                 raise SampleNotFoundException(sample_id)
             else:
-                logger.error(f"\tCan't get sample '{sample_id}' metadata. StasisClient error: {ex.args}", exc_info=True)
+                logging.error(f"\tCan't get sample '{sample_id}' metadata. StasisClient error: {ex.args}", exc_info=True)
                 raise ex
 
         # build method string
@@ -131,11 +131,11 @@ class Scheduler(Thread):
                              sample_data['chromatography']['column'], sample_data['chromatography']['ionisation']])
 
         version = self._get_latest_version(method)
-        logger.debug(f'\tlatest method version: ' + version)
+        logging.debug(f'\tlatest method version: ' + version)
 
         # get profile data
         profile_list = self.cis_cli.get_unique_method_profiles(method, version)
-        logger.debug(f'\tProfiles: {profile_list}')
+        logging.debug(f'\tProfiles: {profile_list}')
 
         if len(profile_list) <= 0:
             raise NoProfileException(method, version)
@@ -149,15 +149,15 @@ class Scheduler(Thread):
             'samples': [sample_id]
         }
 
-        logger.debug('\tstoring job...')
+        logging.debug('\tstoring job...')
         stored_samples = self.stasis_cli.store_job(job)
 
-        logger.info(f"\tJob {job['id']} stored successfully.")
+        logging.info(f"\tJob {job['id']} stored successfully.")
 
         if stored_samples:
             response = self.stasis_cli.schedule_job(job['id'])
 
-            logger.info(f"\tSample {sample_id} scheduled successfully.")
+            logging.info(f"\tSample {sample_id} scheduled successfully.")
             return response
         else:
             raise JobDataStoreException(job['id'])
@@ -177,10 +177,10 @@ class Scheduler(Thread):
 
     def fail_sample(self, file_basename, extension, reason: str):
         try:
-            logger.error(f'\tAdd "failed" scheduling status to stasis for sample "{file_basename}"')
+            logging.error(f'\tAdd "failed" scheduling status to stasis for sample "{file_basename}"')
             self.stasis_cli.sample_state_update(file_basename, 'failed',
                                                 file_handle=f'{file_basename}.{extension}',
                                                 reason=reason)
         except Exception as ex:
-            logger.error(f'\tStasis client can\'t send "failed" status for sample {file_basename}\n'
+            logging.error(f'\tStasis client can\'t send "failed" status for sample {file_basename}\n'
                          f'\tResponse: {str(ex)}')

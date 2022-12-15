@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import logging
 import os
 import time
 from threading import Thread
 
 from cisclient.client import CISClient
-from loguru import logger
 from stasis_client.client import StasisClient
 from watchdog.observers.polling import PollingObserver
 
@@ -75,7 +75,7 @@ class Monitor(Thread):
                            name=f'Converter{x}')
             ) for x in range(0, 5)]
 
-            logger.info(f'Starting threads')
+            logging.info(f'Starting threads')
             for t in threads:
                 t.start()
 
@@ -84,29 +84,28 @@ class Monitor(Thread):
                 self.queue_mgr,
                 self.config['monitor']['extensions'],
                 test=self.config['test'],
-                logger=logger
             )
 
             for p in self.config['monitor']['paths']:
                 if os.path.isdir(p):
-                    logger.info(f'Adding path {p} to monitor')
+                    logging.info(f'Adding path {p} to monitor')
                     observer.schedule(event_handler, p, recursive=True)
                 else:
-                    logger.error(f'Cannot find raw data folder {p}. It will NOT be monitored.')
+                    logging.error(f'Cannot find raw data folder {p}. It will NOT be monitored.')
 
             if self.running:
                 observer.start()
-                logger.info('Monitor started')
+                logging.info('Monitor started')
 
             while self.running:
                 time.sleep(0.1)
 
         except KeyboardInterrupt:
-            logger.info('Monitor shutting down')
+            logging.info('Monitor shutting down')
             self.running = False
 
         finally:
-            logger.info('\tMonitor closing queues and threads')
+            logging.info('\tMonitor closing queues and threads')
             observer.unschedule_all()
             observer.stop()
             observer.join(THREAD_TIMEOUT) if observer.is_alive() else None
@@ -115,6 +114,6 @@ class Monitor(Thread):
 
     def join_threads(self):
         for t in self.threads:
-            logger.warning(f'\tJoining thread {t.name}. Timeout in {THREAD_TIMEOUT} seconds')
+            logging.warning(f'\tJoining thread {t.name}. Timeout in {THREAD_TIMEOUT} seconds')
             t.running = False
             t.join(THREAD_TIMEOUT)

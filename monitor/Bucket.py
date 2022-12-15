@@ -1,19 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import logging
 import os
-import sys
 
 import boto3
 from botocore.exceptions import ClientError
-from loguru import logger
 
 
 class Bucket:
     """ this defines an easy access to a AWS bucket """
-
-    logger.add(sys.stdout, format="{time:YYYY-MM-DD} {level} {file} [{thread.name}]",
-               filter=f"Bucket", level="INFO")
 
     def __init__(self, bucket_name):
         self.bucket_name = bucket_name
@@ -26,11 +22,11 @@ class Bucket:
             if not self.bucket_name in buckets:
                 boto3.client('s3').create_bucket(Bucket=self.bucket_name, CreateBucketConfiguration={
                     'LocationConstraint': 'us-west-2'})
-                logger.info(f'Created bucket: {self.bucket_name}')
+                logging.info(f'Created bucket: {self.bucket_name}')
             else:
-                logger.info(f'Bucket exists: {self.bucket_name}')
+                logging.info(f'Bucket exists: {self.bucket_name}')
         except Exception as ex:
-            logger.error(f'Error checking for destination bucket: {str(ex)}')
+            logging.error(f'Error checking for destination bucket: {str(ex)}')
 
     def save(self, filename):
         """
@@ -41,11 +37,11 @@ class Bucket:
         remote_name = filename.split(os.sep)[-1]
         try:
             # from https://boto3.readthedocs.io/en/latest/reference/services/s3.html#S3.Object.upload_file
-            logger.info(f'\tSaving file {remote_name} on {self.bucket_name}')
+            logging.info(f'\tSaving file {remote_name} on {self.bucket_name}')
             self.s3.Object(self.bucket_name, remote_name).upload_file(filename)
             return remote_name
         except ConnectionResetError as cre:
-            logger.error('Connection reset.', str(cre))
+            logging.error('Connection reset.', str(cre))
             raise cre
         except Exception as e:
             raise e
@@ -65,7 +61,7 @@ class Bucket:
                 # The object does not exist.
                 return False
         except Exception as other:
-            logger.info(f'Other exception: {str(other)}')
+            logging.info(f'Other exception: {str(other)}')
             raise other
         else:
             return True
