@@ -2,9 +2,11 @@
 # -*- coding: utf-8 -*-
 import logging
 import os
+import platform
 import time
 from threading import Thread
 
+import watchtower
 from cisclient.client import CISClient
 from stasis_client.client import StasisClient
 from watchdog.observers.polling import PollingObserver
@@ -15,6 +17,13 @@ from monitor.workers.BucketWorker import BucketWorker
 from monitor.workers.PwizWorker import PwizWorker
 
 THREAD_TIMEOUT = 5
+
+logger = logging.getLogger('Monitor')
+h = watchtower.CloudWatchLogHandler(
+    log_group_name=platform.node(),
+    log_group_retention_days=3,
+    send_interval=30)
+logger.addHandler(h)
 
 
 class Monitor(Thread):
@@ -38,7 +47,7 @@ class Monitor(Thread):
             daemon:
                 Run the worker as daemon. (Optional. Default: True)
         """
-        super().__init__(name='Monitor', daemon=daemon)
+        super().__init__(name=platform.node(), daemon=daemon)
         self.config = config
         self.stasis_cli = stasis_cli
         self.cis_cli = cis_cli
@@ -75,7 +84,7 @@ class Monitor(Thread):
                            name=f'Converter{x}')
             ) for x in range(0, 5)]
 
-            logging.info(f'Starting threads')
+            logger.info(f'Starting threads')
             for t in threads:
                 t.start()
 
@@ -88,24 +97,24 @@ class Monitor(Thread):
 
             for p in self.config['monitor']['paths']:
                 if os.path.isdir(p):
-                    logging.info(f'Adding path {p} to monitor')
+                    logger.info(f'Adding path {p} to monitor')
                     observer.schedule(event_handler, p, recursive=True)
                 else:
-                    logging.error(f'Cannot find raw data folder {p}. It will NOT be monitored.')
+                    logger.error(f'Cannot find raw data folder {p}. It will NOT be monitored.')
 
             if self.running:
                 observer.start()
-                logging.info('Monitor started')
+                logger.info(f'Monitor "{self.name}" started')
 
             while self.running:
                 time.sleep(0.1)
 
         except KeyboardInterrupt:
-            logging.info('Monitor shutting down')
+            logger.info(f'Monitor "{self.name}" shutting down')
             self.running = False
 
         finally:
-            logging.info('\tMonitor closing queues and threads')
+            logger.info(f'\tMonitor "{self.name}" closing queues and threads')
             observer.unschedule_all()
             observer.stop()
             observer.join(THREAD_TIMEOUT) if observer.is_alive() else None
@@ -114,6 +123,6 @@ class Monitor(Thread):
 
     def join_threads(self):
         for t in self.threads:
-            logging.warning(f'\tJoining thread {t.name}. Timeout in {THREAD_TIMEOUT} seconds')
+            logger.warning(f'\tJoining thread {t.name}. Timeout in {THREAD_TIMEOUT} seconds')
             t.running = False
             t.join(THREAD_TIMEOUT)

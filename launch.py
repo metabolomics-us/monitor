@@ -5,7 +5,9 @@ import argparse
 import json
 import logging
 import os
+import platform
 
+import watchtower
 import yamlconf
 from cisclient.client import CISClient
 from stasis_client.client import StasisClient
@@ -15,6 +17,13 @@ from monitor.QueueManager import QueueManager
 
 fmt = '%(levelname)-8s | %(asctime)s | %(threadName)10s | %(filename)-20s:(%(lineno)3s) %(funcName)-20s | %(message)s'
 logging.basicConfig(format=fmt, level='INFO')
+logger = logging.getLogger()
+
+h = watchtower.CloudWatchLogHandler(
+    log_group_name=platform.node(),
+    log_group_retention_days=3,
+    send_interval=30)
+logger.addHandler(h)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -37,33 +46,33 @@ if __name__ == "__main__":
     if args.test:
         stage = 'test'
         configFile = 'appconfig-test.yml'
-        logging.warning('\nRunning in TEST mode !!!\n')
+        logger.warning('\nRunning in TEST mode !!!\n')
 
     with open(configFile, 'r') as stream:
         config = yamlconf.load(stream)
         config['test'] = args.test
 
     if os.path.exists(config['monitor']['msconvert']):
-        logging.info('Found ProteoWizard')
+        logger.info('Found ProteoWizard')
     else:
-        logging.error(f"Can't find ProteoWizard at {config['monitor']['msconvert']}")
+        logger.error(f"Can't find ProteoWizard at {config['monitor']['msconvert']}")
         exit(1)
 
     stasis_cli = StasisClient(os.getenv(config['stasis']['url_var'], "https://test-api.metabolomics.us/stasis"),
                               os.getenv(config['stasis']['api_key_var'], "s45LgmYFPv8NbzVUbcIfRQI6NWlF7W09TUUMavx5"))
     if stasis_cli:
-        logging.info(f'Stasis client initialized. (url: {stasis_cli._url})')
+        logger.info(f'Stasis client initialized. (url: {stasis_cli._url})')
 
     cis_cli = CISClient(os.getenv(config['cis']['url_var'], "https://test-api.metabolomics.us/cis"),
                         os.getenv(config['cis']['api_key_var'], "s45LgmYFPv8NbzVUbcIfRQI6NWlF7W09TUUMavx5"))
 
     if cis_cli:
-        logging.info(f'Cis client initialized. (url: {cis_cli._url})')
+        logger.info(f'Cis client initialized. (url: {cis_cli._url})')
 
     if args.debug:
-        logging.basicConfig(format=fmt, level='DEBUG')
-        logging.debug('Running in debug mode')
-        logging.debug('Configuration: ' + json.dumps(config, indent=2))
+        logging.root.setLevel(level='DEBUG')
+        logger.debug('Running in debug mode')
+        logger.debug('Configuration: ' + json.dumps(config, indent=2))
 
         stasis_cli.logger.level = 'DEBUG'
         # cis_cli.logger.level = 'DEBUG'

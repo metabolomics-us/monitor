@@ -1,10 +1,20 @@
+import logging
+import platform
+
 import boto3
+import watchtower
 from botocore.exceptions import ClientError
-from loguru import logger
 
 CONVERSION_QUEUE = "MonitorConversionQueue"
 UPLOAD_QUEUE = "MonitorUploadQueue"
 PREPROCESSING_QUEUE = "MonitorPreprocessingQueue"
+
+logger = logging.getLogger('QueueManager')
+h = watchtower.CloudWatchLogHandler(
+    log_group_name=platform.node(),
+    log_group_retention_days=3,
+    send_interval=30)
+logger.addHandler(h)
 
 
 class QueueManager:

@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import logging
+import platform
+
 import boto3
+import watchtower
 from stasis_client.client import StasisClient
 from watchdog.events import RegexMatchingEventHandler
 
@@ -9,6 +13,12 @@ from monitor.QueueManager import QueueManager
 FOLDERS_RX = r'^.*?\.d$'
 FILES_RX = r'^.*?\.(:?raw|wiff|mzml)$'
 
+logger = logging.getLogger('RawDataEventHandler')
+h = watchtower.CloudWatchLogHandler(
+    log_group_name=platform.node(),
+    log_group_retention_days=3,
+    send_interval=30)
+logger.addHandler(h)
 
 class RawDataEventHandler(RegexMatchingEventHandler):
     """
