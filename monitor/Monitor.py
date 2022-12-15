@@ -8,7 +8,7 @@ from threading import Thread
 from cisclient.client import CISClient
 from loguru import logger
 from stasis_client.client import StasisClient
-from watchdog.observers.polling import PollingObserver
+from watchdog.observers import Observer
 
 from monitor.RawDataEventHandler import RawDataEventHandler
 from monitor.workers.BucketWorker import BucketWorker
@@ -56,7 +56,7 @@ class Monitor(Thread):
     def run(self):
         """Starts the monitoring of the selected folders"""
 
-        observer = PollingObserver()
+        observer = Observer()
         try:
             # Setup the aws uploader worker
             aws_worker = BucketWorker(self,

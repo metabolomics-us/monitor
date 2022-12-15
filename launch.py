@@ -68,8 +68,8 @@ if __name__ == "__main__":
         logger.debug('Running in debug mode')
         logger.debug('Configuration: ' + json.dumps(config, indent=2))
 
-        stasis_cli.logger.level = 'DEBUG'
-        cis_logger.level = 'DEBUG'
+        # stasis_cli.logger.level = 'DEBUG'
+        # cis_logger.level = 'DEBUG'
 
     conv_q = Queue()
     aws_q = Queue()

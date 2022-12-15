@@ -1,8 +1,10 @@
 monitor:
   # Raw data folders to monitor
   paths:
-    - '\\exploris\exploris\data'  # exploris drive
-    - '\\dnc3br2\qexactive\data'  # QExactive drive
+    - 'D:\studies\core\2022'       # core drive
+    - 'D:\studies\core\2023'       # core drive
+    - 'D:\studies\research\2022'   # research drive
+    - 'D:\studies\research\2023'   # research drive
 
   # Raw data type to monitor
   extensions:
@@ -22,10 +24,10 @@ monitor:
     - 'test'
 
   # Destination folder of converted files
-  storage: 'C:\Windows\Temp'
+  storage: 'D:\lunabkup\mzml'
 
   # Full path to ProteoWizard msconvert tool
-  msconvert: 'C:\tools\pwiz\msconvert.exe'
+  msconvert: 'D:\tools\pwiz\msconvert.exe'
 
   # Enables automatic scheduling of converted samples. Default: False
   schedule: False
