@@ -5,9 +5,9 @@ import boto3
 import watchtower
 from botocore.exceptions import ClientError
 
-CONVERSION_QUEUE = "MonitorConversionQueue"
-UPLOAD_QUEUE = "MonitorUploadQueue"
-PREPROCESSING_QUEUE = "MonitorPreprocessingQueue"
+QUEUES = [{'type': 'conversion', 'name': 'MonitorConversionQueue'},
+          {'type': 'upload', 'name': 'MonitorUploadQueue'},
+          {'type': 'preprocess', 'name': 'MonitorPreprocessingQueue'}]
 
 logger = logging.getLogger('QueueManager')
 h = watchtower.CloudWatchLogHandler(
@@ -23,15 +23,19 @@ class QueueManager:
         self.stage = stage
         self.sqs = boto3.client('sqs')
         self.host = host
+        self.init_queues()
 
     def conversion_q(self):
-        return self.__get_queue(CONVERSION_QUEUE + '-' + self.host + '-' + self.stage)['QueueUrl']
+        q = list(filter(lambda x: x['type'] == 'conversion', QUEUES))[0]
+        return self.__get_queue(f"{q['name']}-{self.host}-{self.stage}")['QueueUrl']
 
     def upload_q(self):
-        return self.__get_queue(UPLOAD_QUEUE + '-' + self.host + '-' + self.stage)['QueueUrl']
+        q = list(filter(lambda x: x['type'] == 'upload', QUEUES))[0]
+        return self.__get_queue(f"{q['name']}-{self.host}-{self.stage}")['QueueUrl']
 
     def preprocess_q(self):
-        return self.__get_queue(PREPROCESSING_QUEUE + '-' + self.host + '-' + self.stage)['QueueUrl']
+        q = list(filter(lambda x: x['type'] == 'preprocess', QUEUES))[0]
+        return self.__get_queue(f"{q['name']}-{self.host}-{self.stage}")['QueueUrl']
 
     def get_next_message(self, queue_url: str):
         data = self.sqs.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=1, VisibilityTimeout=10)
@@ -65,3 +69,25 @@ class QueueManager:
 
     def clean(self, queue_url):
         self.sqs.purge_queue(QueueUrl=queue_url)
+
+    def init_queues(self):
+        qs = self.sqs.list_queues()
+        logger.debug(qs)
+        queues = qs.get('QueueUrls',[])
+
+        for q in QUEUES:
+            fqqn = f"{q['name']}-{self.host}-{self.stage}"
+            logger.debug(f'Checking queue {fqqn}')
+            try:
+                self.sqs.create_queue(QueueName=fqqn)
+                logger.debug(f'Queue {fqqn} created')
+            except ClientError as ex:
+                logger.debug(f'Queue {fqqn} exists', ex.args)
+                pass
+
+            # TODO: Fix the above hack!!! Finish the following code, it's a better way to do it
+            # if fqqn not in queues:
+            #     self.sqs.create_queue(QueueName=fqqn)
+            #     logger.info(f'Queue {fqqn} created')
+            # else:
+            #     logger.info(f'Queue {fqqn} already exists')
