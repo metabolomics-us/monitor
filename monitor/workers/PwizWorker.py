@@ -170,7 +170,7 @@ class PwizWorker(Thread):
         else:
             # update tracking status
             logger.warning(f'\tSetting {item} as failed')
-            self.fail_sample(file_basename, extension, reason=result.stdout.decode('ascii'))
+            self.fail_sample(file_basename, "mzml", reason=result.stdout.decode('ascii'))
 
     def get_file_size(self, path):
         return os.stat(path).st_size
@@ -205,10 +205,11 @@ class PwizWorker(Thread):
 
         c = 0
         while size < curr:
-            if path.endswith('.d') or path.endswith('.wiff'):
+            logger.info('\t\twaiting for instrument...')
+            if self.config['test']:
                 time.sleep(3)
             else:
-                time.sleep(1)
+                time.sleep(120)
             size = curr
             curr = self.get_folder_size4(path) if os.path.isdir(path) else self.get_file_size(path)
 
@@ -228,10 +229,10 @@ class PwizWorker(Thread):
 
     def fail_sample(self, file_basename, extension, reason: str):
         try:
-            logger.error(f'\tAdd "failed" conversion status to stasis for sample "{file_basename}.{extension}"')
+            logger.error(f'\tAdd "failed" conversion status to stasis for sample "{file_basename}{extension}"')
             self.stasis_cli.sample_state_update(file_basename, 'failed', reason=reason)
         except Exception as ex:
-            logger.error(f'\tStasis client can\'t send "failed" status for sample {file_basename}.{extension}. '
+            logger.error(f'\tStasis client can\'t send "failed" status for sample {file_basename}{extension}. '
                          f'\tResponse: {str(ex)}')
 
     def update_output(self, item):

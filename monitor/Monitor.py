@@ -83,7 +83,8 @@ class Monitor(Thread):
                 self.stasis_cli,
                 self.queue_mgr,
                 self.config['monitor']['extensions'],
-                test=self.config['test']
+                test=self.config['test'],
+                logger=logger
             )
 
             for p in self.config['monitor']['paths']:

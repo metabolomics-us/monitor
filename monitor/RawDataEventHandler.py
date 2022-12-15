@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 import boto3
 from stasis_client.client import StasisClient
 from watchdog.events import RegexMatchingEventHandler
