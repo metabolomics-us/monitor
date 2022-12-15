@@ -18,7 +18,7 @@ from monitor.QueueManager import QueueManager
 
 logger = logging.getLogger('PwizWorker')
 h = watchtower.CloudWatchLogHandler(
-    log_group_name=platform.node(),
+    log_group_name=f'/lcb/monitor/{platform.node()}',
     log_group_retention_days=3,
     send_interval=30)
 logger.addHandler(h)

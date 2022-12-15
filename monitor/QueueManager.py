@@ -11,7 +11,7 @@ PREPROCESSING_QUEUE = "MonitorPreprocessingQueue"
 
 logger = logging.getLogger('QueueManager')
 h = watchtower.CloudWatchLogHandler(
-    log_group_name=platform.node(),
+    log_group_name=f'/lcb/monitor/{platform.node()}',
     log_group_retention_days=3,
     send_interval=30)
 logger.addHandler(h)
@@ -19,18 +19,19 @@ logger.addHandler(h)
 
 class QueueManager:
 
-    def __init__(self, stage: str):
+    def __init__(self, stage: str, host: str = platform.node()):
         self.stage = stage
         self.sqs = boto3.client('sqs')
+        self.host = host
 
     def conversion_q(self):
-        return self.__get_queue(CONVERSION_QUEUE + '-' + self.stage)['QueueUrl']
+        return self.__get_queue(CONVERSION_QUEUE + '-' + self.host + '-' + self.stage)['QueueUrl']
 
     def upload_q(self):
-        return self.__get_queue(UPLOAD_QUEUE + '-' + self.stage)['QueueUrl']
+        return self.__get_queue(UPLOAD_QUEUE + '-' + self.host + '-' + self.stage)['QueueUrl']
 
     def preprocess_q(self):
-        return self.__get_queue(PREPROCESSING_QUEUE + '-' + self.stage)['QueueUrl']
+        return self.__get_queue(PREPROCESSING_QUEUE + '-' + self.host + '-' + self.stage)['QueueUrl']
 
     def get_next_message(self, queue_url: str):
         data = self.sqs.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=1, VisibilityTimeout=10)
