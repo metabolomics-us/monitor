@@ -7,10 +7,13 @@ botocore
 loguru
 pywin32
 retry
+watchtower
 git+https://github.com/metabolomics-us/carpy.git@master#egg=cis-client&subdirectory=cis-client
 git+https://github.com/metabolomics-us/carpy.git@master#egg=stasis-client&subdirectory=stasis-client
 
 # test deps
 mock
+moto
 pytest
 setuptools
+psutil

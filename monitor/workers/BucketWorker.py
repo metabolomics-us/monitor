@@ -1,15 +1,26 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import logging
 import os
+import platform
+import tempfile
 import time
-from queue import Queue
 from threading import Thread
 
-from loguru import logger
+import boto3
+import watchtower
 from stasis_client.client import StasisClient
 
 from monitor.Bucket import Bucket
+from monitor.QueueManager import QueueManager
+
+logger = logging.getLogger('BucketWorker')
+h = watchtower.CloudWatchLogHandler(
+    log_group_name=f'/lcb/monitor/{platform.node()}',
+    log_group_retention_days=3,
+    send_interval=30)
+logger.addHandler(h)
 
 
 class BucketWorker(Thread):
@@ -18,7 +29,7 @@ class BucketWorker(Thread):
     """
 
     def __init__(self, parent, stasis: StasisClient, config,
-                 up_q: Queue, sched_q: Queue,
+                 queue_mgr: QueueManager,
                  name='Uploader0', daemon=True):
         """
 
@@ -29,37 +40,40 @@ class BucketWorker(Thread):
                 A stasis client instance
             config:
                 An object containing config settings
-            up_q: Queue
-                A queue that contains the filenames to be uploaded
-            sched_q: Queue
-                A queue that contains the samples to be auto-scheduled
+            queue_mgr: QueueManager
+                A QueueManager object that handles setting up queues and sending/receiving messages
             name: str (Optional. Default: Uploader0)
                 Name of the worker instance
             daemon:
                 Run the worker as daemon. (Optional. Default: True)
         """
         super().__init__(name=name, daemon=daemon)
+        self.sqs = boto3.client('sqs')
+
         self.parent = parent
-        self.bucket = Bucket(config['aws']['bucket_name'])
-        self.upload_q = up_q
-        self.schedule_q = sched_q
         self.running = False
+        self.queue_mgr = queue_mgr
+        self.bucket = Bucket(config['aws']['bucket_name'])
         self.stasis_cli = stasis
-        self.storage = config['monitor']['storage']
+        self.storage = tempfile.tempdir
         self.schedule = config['monitor']['schedule']
         self.test = config['test']
 
     def run(self):
         """Starts the Uploader Worker"""
+        self.running = True
+
         item = None
         file_basename = None
         extension = None
 
-        self.running = True
-
         while self.running:
             try:
-                item = self.upload_q.get()
+                item = self.queue_mgr.get_next_message(self.queue_mgr.upload_q())
+                if not item:
+                    logger.debug('\twaiting...')
+                    time.sleep(1.7)
+                    continue
 
                 file_basename, extension = str(item.split(os.sep)[-1]).rsplit('.', 1)
 
@@ -70,12 +84,15 @@ class BucketWorker(Thread):
                     logger.info(f'\tFile {remote_name} saved to {self.bucket.bucket_name}')
                     self.pass_sample(file_basename, extension)
 
-                    if self.schedule:
-                        logger.info('\tAdding to scheduling queue.')
-                        self.schedule_q.put_nowait(file_basename)
+                    # auto preprocess causes too many issues
+                    # if self.schedule:
+                    #     logger.info('\tAdding to scheduling queue.')
+                    #     self.queue_mgr.put_message(self.queue_mgr.preprocess_q(), file_basename)
                 else:
                     self.fail_sample(file_basename, 'mzml',
                                      reason='some unknown error happened while uploading the file')
+
+                logger.info(f'Uploader queue size: {self.queue_mgr.get_size(self.queue_mgr.upload_q())}')
 
             except ConnectionResetError as cre:
                 logger.error(f'\tConnection Reset: {cre.strerror} uploading {cre.filename}')
@@ -84,10 +101,6 @@ class BucketWorker(Thread):
             except KeyboardInterrupt:
                 logger.warning(f'\tStopping {self.name} due to Control+C')
                 self.running = False
-                self.schedule_q.queue.clear()
-                self.upload_q.queue.clear()
-                self.schedule_q.join()
-                self.upload_q.join()
                 self.parent.join_threads()
 
             except IndexError:
@@ -98,8 +111,8 @@ class BucketWorker(Thread):
                 self.fail_sample(file_basename, 'mzml', reason=str(ex))
 
             finally:
-                self.upload_q.task_done()
-                logger.info(f'Uploader queue size: {self.upload_q.qsize()}')
+                pass
+                # logger.info(f'Uploader queue size: {self.queue_mgr.get_size(self.queue_mgr.upload_q())}')
 
         logger.info(f'\tStopping {self.name}')
         self.join()
@@ -110,7 +123,7 @@ class BucketWorker(Thread):
             self.stasis_cli.sample_state_update(file_basename, 'uploaded_raw', f'{file_basename}.mzml')
         except Exception as ex:
             logger.error(f'\tStasis client can\'t send "uploaded_raw" status for sample {file_basename}. '
-                         f'\tResponse: {str(ex)}')
+                          f'\tResponse: {str(ex)}')
 
     def fail_sample(self, file_basename, extension, reason):
         try:
@@ -118,7 +131,7 @@ class BucketWorker(Thread):
             self.stasis_cli.sample_state_update(file_basename, 'failed', reason=reason)
         except Exception as ex:
             logger.error(f'\tStasis client can\'t send "failed" status for sample {file_basename}.{extension}. '
-                         f'\tResponse: {str(ex)}')
+                          f'\tResponse: {str(ex)}')
 
     def exists(self, filename):
         return self.bucket.exists(filename)

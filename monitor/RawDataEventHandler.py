@@ -1,44 +1,54 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import logging
-from multiprocessing.queues import Queue
+import platform
 
+import boto3
+import watchtower
 from stasis_client.client import StasisClient
 from watchdog.events import RegexMatchingEventHandler
+
+from monitor.QueueManager import QueueManager
 
 FOLDERS_RX = r'^.*?\.d$'
 FILES_RX = r'^.*?\.(:?raw|wiff|mzml)$'
 
+logger = logging.getLogger('RawDataEventHandler')
+h = watchtower.CloudWatchLogHandler(
+    log_group_name=f'/lcb/monitor/{platform.node()}',
+    log_group_retention_days=3,
+    send_interval=30)
+logger.addHandler(h)
 
 class RawDataEventHandler(RegexMatchingEventHandler):
-    """A custom file event handler for watchdog
-
-    Parameters
-    ----------
-        st_cli: StasisClient
-            Rest client object to interact with the stasis api
-        conversion_q: Queue
-            Queue of raw data files to be converted to mzml
-        extensions: array
-            An array of valid lower cased file extensions (['.d', '.raw', '.wiff', '.mzml])
-        test: Boolean
-            A boolean indicating test run when True
+    """
+    A custom file event handler for watchdog
     """
 
-    def __init__(self, st_cli: StasisClient, conversion_q: Queue, upload_q: Queue, extensions, 
-    test: bool = False, logger = None):
+    def __init__(self, st_cli: StasisClient, queue_mgr: QueueManager, extensions, test: bool = False):
+        """
+        Args:
+            st_cli: StasisClient
+                Rest client object to interact with the stasis api
+            queue_mgr: QueueManager
+                A QueueManager object that handles setting up queues and sending/receiving messages
+            extensions: array
+                An array of valid lower cased file extensions (['.d', '.raw', '.wiff', '.mzml])
+            test: Boolean
+                A boolean indicating test run when True
+        """
+
         super().__init__(regexes=[FOLDERS_RX, FILES_RX])
+
+        self.sqs = boto3.client('sqs')
+
         self.stasis_cli = st_cli
-        self.conversion_q = conversion_q
-        self.upload_q = upload_q
+        self.queue_mgr = queue_mgr
         self.extensions = extensions
         self.test = test
-        self.logger = logger if logger else logging.getLogger(self.__class__.__name__)
 
     def on_created(self, event):
-        self.logger.debug(f'\tcreated {event.src_path}')
-        self.conversion_q.put_nowait(event.src_path)
+        self.queue_mgr.put_message(self.queue_mgr.conversion_q(), event.src_path)
 
     def on_moved(self, event):
-        self.logger.debug(f'\tmoved {event.src_path} to {event.dest_path}')
-        self.conversion_q.put_nowait(event.dest_path)
+        self.queue_mgr.put_message(self.queue_mgr.conversion_q(), event.dest_path)

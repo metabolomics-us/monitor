@@ -1,8 +1,8 @@
 monitor:
   # Raw data folders to monitor
   paths:
-    - '\\exploris\exploris\data'  # exploris drive
-    - '\\dnc3br2\qexactive\data'  # QExactive drive
+#    - '\\exploris\exploris\data'  # remote windows share
+#    - 'C:\my data\to_monitor'  # local drive
 
   # Raw data type to monitor
   extensions:
@@ -27,19 +27,19 @@ monitor:
   # Full path to ProteoWizard msconvert tool
   msconvert: 'C:\tools\pwiz\msconvert.exe'
 
-  # Enables automatic scheduling of converted samples. Default: False
+  # Enables automatic scheduling of converted samples. Options: True, False. Default: False
   schedule: False
 
-  # Enables checking if sample exists in dynamo before conversion. Default: False
-  exists: False
+  # Enables checking if sample exists in dynamo before conversion. Options: True, False. Default: False
+  exists: True
 
 cis:
-  url_var: 'TEST_CIS_API_URL'
-  api_key_var: 'TEST_CIS_API_TOKEN'
+  url_var: 'PROD_CIS_API_URL'
+  api_key_var: 'PROD_CIS_API_TOKEN'
 
 stasis:
-  url_var: 'TEST_STASIS_API_URL'
-  api_key_var: 'TEST_STASIS_API_TOKEN'
+  url_var: 'PROD_STASIS_API_URL'
+  api_key_var: 'PROD_STASIS_API_TOKEN'
 
 aws:
-  bucket_name: 'datatest-carrot'
+  bucket_name: 'data-carrot'

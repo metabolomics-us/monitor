@@ -1,21 +1,29 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import logging
 import os
+import platform
 import time
-from queue import Queue
 from threading import Thread
 
+import watchtower
 from cisclient.client import CISClient
-from loguru import logger
 from stasis_client.client import StasisClient
 from watchdog.observers.polling import PollingObserver
 
+from monitor.QueueManager import QueueManager
 from monitor.RawDataEventHandler import RawDataEventHandler
 from monitor.workers.BucketWorker import BucketWorker
 from monitor.workers.PwizWorker import PwizWorker
-from monitor.workers.Scheduler import Scheduler
 
 THREAD_TIMEOUT = 5
+
+logger = logging.getLogger('Monitor')
+h = watchtower.CloudWatchLogHandler(
+    log_group_name=f'/lcb/monitor/{platform.node()}',
+    log_group_retention_days=3,
+    send_interval=30)
+logger.addHandler(h)
 
 
 class Monitor(Thread):
@@ -24,8 +32,7 @@ class Monitor(Thread):
     """
 
     def __init__(self, config, stasis_cli: StasisClient, cis_cli: CISClient,
-                 conv_q: Queue, up_q: Queue, sched_q: Queue,
-                 daemon=False):
+                 queue_mgr: QueueManager, daemon=False):
         """
 
         Args:
@@ -35,50 +42,44 @@ class Monitor(Thread):
                 A stasis client instance
             cis_cli: CisClient
                 A cis client instance
-            up_q: Queue
-                A queue that contains the filenames to be uploaded
-            sched_q: Queue
-                A queue that contains the samples to be auto-scheduled
+            queue_mgr: QueueManager
+                A QueueManager object that handles setting up queues and sending/receiving messages
             daemon:
                 Run the worker as daemon. (Optional. Default: True)
         """
-        super().__init__(name='Monitor', daemon=daemon)
+        super().__init__(name=platform.node(), daemon=daemon)
         self.config = config
         self.stasis_cli = stasis_cli
         self.cis_cli = cis_cli
-        self.conversion_q = conv_q
-        self.upload_q = up_q
-        self.schedule_q = sched_q
         self.running = True
         self.test = config['test']
         self.threads = []
+        self.queue_mgr = queue_mgr
 
     def run(self):
         """Starts the monitoring of the selected folders"""
-
         observer = PollingObserver()
         try:
             # Setup the aws uploader worker
             aws_worker = BucketWorker(self,
                                       self.stasis_cli,
                                       self.config,
-                                      self.upload_q,
-                                      self.schedule_q)
+                                      self.queue_mgr)
 
-            scheduler = Scheduler(self,
-                                  self.stasis_cli,
-                                  self.cis_cli,
-                                  self.config,
-                                  self.schedule_q)
+            # scheduler = Scheduler(self,
+            #                       self.stasis_cli,
+            #                       self.cis_cli,
+            #                       self.config,
+            #                       self.queue_mgr)
 
-            threads = [aws_worker, scheduler]
+            # threads = [aws_worker, scheduler]
+            threads = [aws_worker]
 
             # Setup the pwiz workers
             [threads.append(
                 PwizWorker(self,
                            self.stasis_cli,
-                           self.conversion_q,
-                           self.upload_q,
+                           self.queue_mgr,
                            self.config,
                            name=f'Converter{x}')
             ) for x in range(0, 5)]
@@ -89,11 +90,9 @@ class Monitor(Thread):
 
             event_handler = RawDataEventHandler(
                 self.stasis_cli,
-                self.conversion_q,
-                self.upload_q,
+                self.queue_mgr,
                 self.config['monitor']['extensions'],
                 test=self.config['test'],
-                logger=logger
             )
 
             for p in self.config['monitor']['paths']:
@@ -105,26 +104,20 @@ class Monitor(Thread):
 
             if self.running:
                 observer.start()
-                logger.info('Monitor started')
+                logger.info(f'Monitor "{self.name}" started')
 
             while self.running:
                 time.sleep(0.1)
 
         except KeyboardInterrupt:
-            logger.info('Monitor shutting down')
+            logger.info(f'Monitor "{self.name}" shutting down')
             self.running = False
 
         finally:
-            logger.info('\tMonitor closing queues and threads')
+            logger.info(f'\tMonitor "{self.name}" closing queues and threads')
             observer.unschedule_all()
             observer.stop()
             observer.join(THREAD_TIMEOUT) if observer.is_alive() else None
-            self.conversion_q.queue.clear() if self.conversion_q.not_empty else None
-            self.upload_q.queue.clear() if self.upload_q.not_empty else None
-            self.schedule_q.queue.clear() if self.schedule_q.not_empty else None
-            self.conversion_q.join()
-            self.upload_q.join()
-            self.schedule_q.join()
             self.join_threads()
             self.join(THREAD_TIMEOUT) if self.is_alive() else None
 

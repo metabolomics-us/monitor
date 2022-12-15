@@ -1,14 +1,25 @@
-from queue import Queue
+import logging
+import platform
+import time
 from threading import Thread
 from time import sleep
 
+import boto3
 import simplejson as json
+import watchtower
 from cisclient.client import CISClient
 from cisclient.exceptions import CisClientException
-from loguru import logger
 from stasis_client.client import StasisClient
 
+from monitor.QueueManager import QueueManager
 from monitor.exceptions import NoProfileException, SampleNotFoundException, JobDataStoreException
+
+logger = logging.getLogger('Scheduler')
+h = watchtower.CloudWatchLogHandler(
+    log_group_name=platform.node(),
+    log_group_retention_days=3,
+    send_interval=30)
+logger.addHandler(h)
 
 
 class Scheduler(Thread):
@@ -17,7 +28,7 @@ class Scheduler(Thread):
     """
 
     def __init__(self, parent, stasis: StasisClient, cis: CISClient,
-                 config, sched_q: Queue,
+                 config, queue_mgr: QueueManager,
                  name='Scheduler0', daemon=True):
         """
         Args:
@@ -29,19 +40,21 @@ class Scheduler(Thread):
                 A cis client instance
             config:
                 An object containing config settings
-            sched_q: Queue
-                A queue that contains the samples to be auto-scheduled
+            queue_mgr: QueueManager
+                A QueueManager object that handles setting up queues and sending/receiving messages
             name: str (Optional. Default: Scheduler0)
                 Name of the worker instance
             daemon:
                 Run the worker as daemon. (Optional. Default: True)
         """
         super().__init__(name=name, daemon=daemon)
+        self.sqs = boto3.client('sqs')
+
         self.parent = parent
+        self.running = False
+        self.queue_mgr = queue_mgr
         self.stasis_cli = stasis
         self.cis_cli = cis
-        self.schedule_q = sched_q
-        self.running = False
         self.schedule = config['monitor']['schedule']
         self.test = config['test']
 
@@ -51,7 +64,11 @@ class Scheduler(Thread):
 
         while self.running:
             try:
-                item = self.schedule_q.get()
+                item = self.queue_mgr.get_next_message(self.queue_mgr.preprocess_q())
+                if not item:
+                    logger.debug('\twaiting...')
+                    time.sleep(2.7)
+                    continue
 
                 logger.info(f'Scheduling sample with id {item}')
 
@@ -66,8 +83,6 @@ class Scheduler(Thread):
             except KeyboardInterrupt:
                 logger.warning(f'\tStopping {self.name} due to Keyboard Interrupt')
                 self.running = False
-                self.schedule_q.queue.clear()
-                self.schedule_q.join()
                 self.parent.join_threads()
 
             except IndexError:
@@ -99,8 +114,7 @@ class Scheduler(Thread):
                 self.fail_sample(item, '', reason=msg)
 
             finally:
-                self.schedule_q.task_done()
-                logger.info(f'Scheduler queue size: {self.schedule_q.qsize()}')
+                logger.info(f'Scheduler queue size: {self.queue_mgr.get_size(self.queue_mgr.preprocess_q())}')
 
         logger.info(f'Stopping {self.name}')
         self.join()
@@ -118,7 +132,8 @@ class Scheduler(Thread):
             if 'acquisition data not found' in str(ex):
                 raise SampleNotFoundException(sample_id)
             else:
-                logger.error(f"\tCan't get sample '{sample_id}' metadata. StasisClient error: {ex.args}", exc_info=True)
+                logger.error(f"\tCan't get sample '{sample_id}' metadata. StasisClient error: {ex.args}",
+                              exc_info=True)
                 raise ex
 
         # build method string
@@ -178,4 +193,4 @@ class Scheduler(Thread):
                                                 reason=reason)
         except Exception as ex:
             logger.error(f'\tStasis client can\'t send "failed" status for sample {file_basename}\n'
-                         f'\tResponse: {str(ex)}')
+                          f'\tResponse: {str(ex)}')

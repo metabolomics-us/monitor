@@ -1,19 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import logging
 import os
-import sys
 
 import boto3
 from botocore.exceptions import ClientError
-from loguru import logger
 
+logger = logging.getLogger('BucketWorker')
 
 class Bucket:
     """ this defines an easy access to a AWS bucket """
-
-    logger.add(sys.stdout, format="{time:YYYY-MM-DD} {level} {file} [{thread.name}]",
-               filter=f"Bucket", level="INFO")
 
     def __init__(self, bucket_name):
         self.bucket_name = bucket_name

@@ -3,22 +3,27 @@
 
 import argparse
 import json
+import logging
 import os
-import sys
-from queue import Queue
+import platform
 
+import watchtower
 import yamlconf
 from cisclient.client import CISClient
-from cisclient.client import logger as cis_logger
-from loguru import logger
 from stasis_client.client import StasisClient
 
 from monitor.Monitor import Monitor
+from monitor.QueueManager import QueueManager
 
-logger.remove()
-fmt = "<level>{level: <7}</level> | <g>{time:YYYY-MM-DD hh:mm:ss}</g> | <m>{thread.name: <10}</m> | " \
-      "<c>{file: >20} ({line: >3}) {function: <20}</c> | {message}"
-logger.add(sys.stderr, format=fmt, level="INFO")
+fmt = '%(levelname)-8s | %(asctime)s | %(threadName)10s | %(filename)-20s:(%(lineno)3s) %(funcName)-20s | %(message)s'
+logging.basicConfig(format=fmt, level='INFO')
+logger = logging.getLogger()
+
+h = watchtower.CloudWatchLogHandler(
+    log_group_name=f'/lcb/monitor/{platform.node()}',
+    log_group_retention_days=3,
+    send_interval=30)
+logger.addHandler(h)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -37,7 +42,9 @@ if __name__ == "__main__":
     else:
         configFile = 'appconfig.yml'
 
+    stage = 'prod'
     if args.test:
+        stage = 'test'
         configFile = 'appconfig-test.yml'
         logger.warning('\nRunning in TEST mode !!!\n')
 
@@ -52,28 +59,24 @@ if __name__ == "__main__":
         exit(1)
 
     stasis_cli = StasisClient(os.getenv(config['stasis']['url_var'], "https://test-api.metabolomics.us/stasis"),
-                              os.getenv(config['stasis']['api_key_var'], "9MjbJRbAtj8spCJJVTPbP3YWc4wjlW0c7AP47Pmi"))
+                              os.getenv(config['stasis']['api_key_var'], "s45LgmYFPv8NbzVUbcIfRQI6NWlF7W09TUUMavx5"))
     if stasis_cli:
         logger.info(f'Stasis client initialized. (url: {stasis_cli._url})')
 
     cis_cli = CISClient(os.getenv(config['cis']['url_var'], "https://test-api.metabolomics.us/cis"),
-                        os.getenv(config['cis']['api_key_var'], "9MjbJRbAtj8spCJJVTPbP3YWc4wjlW0c7AP47Pmi"))
+                        os.getenv(config['cis']['api_key_var'], "s45LgmYFPv8NbzVUbcIfRQI6NWlF7W09TUUMavx5"))
 
     if cis_cli:
         logger.info(f'Cis client initialized. (url: {cis_cli._url})')
 
     if args.debug:
-        logger.remove()
-        logger.add(sys.stderr, format=fmt, level='DEBUG')
+        logging.root.setLevel(level='DEBUG')
         logger.debug('Running in debug mode')
         logger.debug('Configuration: ' + json.dumps(config, indent=2))
 
         stasis_cli.logger.level = 'DEBUG'
-        cis_logger.level = 'DEBUG'
+        # cis_cli.logger.level = 'DEBUG'
 
-    conv_q = Queue()
-    aws_q = Queue()
-    sched_q = Queue()
+    queue_mgr = QueueManager(stage)
 
-    Monitor(config, stasis_cli, cis_cli, conv_q, aws_q, sched_q).run()
-
+    Monitor(config, stasis_cli, cis_cli, queue_mgr).run()
