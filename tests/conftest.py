@@ -19,7 +19,6 @@ def pytest_generate_tests(metafunc):
     os.environ['TEST_STASIS_API_TOKEN'] = 's45LgmYFPv8NbzVUbcIfRQI6NWlF7W09TUUMavx5'
     os.environ['monitor_upload_queue'] = 'MonitorUploadQueue-test'
     os.environ['monitor_conversion_queue'] = 'MonitorConversionQueue-test'
-    os.environ['monitor_preprocess_queue'] = 'MonitorPreprocessingQueue-test'
     os.environ['AWS_ACCESS_KEY_ID'] = 'testing'
     os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
     os.environ['AWS_SECURITY_TOKEN'] = 'testing'
@@ -35,6 +34,9 @@ def mocks():
     sqs = moto.mock_sqs()
     sqs.start()
 
+    ddb = moto.mock_dynamodb()
+    ddb.start()
+
     ress3 = boto3.client('s3')
     ress3.create_bucket(Bucket='datatest-carrot',
                         CreateBucketConfiguration={'LocationConstraint': 'us-west-2'})
@@ -44,12 +46,15 @@ def mocks():
     time.sleep(1)
     ressqs.create_queue(QueueName=os.environ["monitor_upload_queue"])
     time.sleep(1)
-    ressqs.create_queue(QueueName=os.environ["monitor_preprocess_queue"])
-    time.sleep(1)
+
+    # ddbres = boto3.resource('dynamodb')
+    # ddbres.create_table(TableName='StasisTrackingTable-test')
+    # ddbres.create_table(TableName='StasisMetaDataTable-test')
 
     yield
     sqs.stop()
     s3.stop()
+    ddb.stop()
     pass
 
 
