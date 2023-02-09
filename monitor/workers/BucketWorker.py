@@ -85,9 +85,9 @@ class BucketWorker(Thread):
                     self.pass_sample(file_basename, extension)
 
                     # auto preprocess causes too many issues
-                    # if self.schedule:
-                    #     logger.info('\tAdding to scheduling queue.')
-                    #     self.queue_mgr.put_message(self.queue_mgr.preprocess_q(), file_basename)
+                    if self.schedule:
+                        logger.info('\tAdding "{file_basename}" to scheduling queue.')
+                        self.queue_mgr.put_message(self.queue_mgr.process_q(), file_basename)
                 else:
                     self.fail_sample(file_basename, 'mzml',
                                      reason='some unknown error happened while uploading the file')

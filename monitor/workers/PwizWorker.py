@@ -14,6 +14,7 @@ from threading import Thread, Lock, local
 import watchtower
 from stasis_client.client import StasisClient
 
+from monitor.Bucket import Bucket
 from monitor.QueueManager import QueueManager
 
 logger = logging.getLogger('PwizWorker')
@@ -58,6 +59,7 @@ class PwizWorker(Thread):
         self.storage = config['monitor']['storage'] if config['monitor']['storage'].endswith(os.path.sep) else \
             config['monitor']['storage'] + os.path.sep
         self.test = config['test']
+        self.bucket = Bucket(config['aws']['bucket_name'])
 
         self._lock = Lock()
 
@@ -97,6 +99,13 @@ class PwizWorker(Thread):
                     if not self.stasis_cli.sample_acquisition_exists(file_basename):
                         logger.info('File not in stasis, skipping.')
                         continue
+
+                # check if sample has been converted and uploaded already
+                exists = self.bucket.exists(f'{file_basename}.mzml')
+
+                if exists:
+                    logger.info(f'File {file_basename}.mzml converted, uploaded and newer than 30 days, skipping.')
+                    continue
 
                 logger.info(f'Starting conversion of {item}')
 
@@ -237,10 +246,10 @@ class PwizWorker(Thread):
 
     def fail_sample(self, file_basename, extension, reason: str):
         try:
-            logger.error(f'\tAdd "failed" conversion status to stasis for sample "{file_basename}{extension}"')
+            logger.error(f'\tAdd "failed" conversion status to stasis for sample "{file_basename}.{extension}"')
             self.stasis_cli.sample_state_update(file_basename, 'failed', reason=reason)
         except Exception as ex:
-            logger.error(f'\tStasis client can\'t send "failed" status for sample "{file_basename}{extension}". '
+            logger.error(f'\tStasis client can\'t send "failed" status for sample "{file_basename}". '
                           f'\tResponse: {str(ex)}')
 
     def update_output(self, item):

@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 import logging
 import os
+from datetime import datetime, timezone, timedelta
 
 import boto3
 from botocore.exceptions import ClientError
 
 logger = logging.getLogger('BucketWorker')
+
 
 class Bucket:
     """ this defines an easy access to a AWS bucket """
@@ -55,7 +56,14 @@ class Bucket:
         """
 
         try:
-            self.s3.Object(self.bucket_name, name).load()
+            file = self.s3.Object(self.bucket_name, name)
+            file.load()
+            age = (datetime.now(timezone.utc) - file.last_modified)
+
+            if age < timedelta(days=30):
+                return True     # newer than 30 days, skip conversion
+            else:
+                return False    # older than 30 days, trigger conversion
 
         except ClientError as e:
             if e.response['Error']['Code'] == "404":
@@ -64,21 +72,21 @@ class Bucket:
         except Exception as other:
             logger.info(f'Other exception: {str(other)}')
             raise other
-        else:
-            return True
 
-    def delete(self, name):
-        """
-            deletes the given data entry
-        :param name:
-        :return:
-        """
-        self.s3.Object(self.bucket_name, name).delete()
 
-    def list(self):
-        """
-            lists the files in the raw data bucket
+def delete(self, name):
+    """
+        deletes the given data entry
+    :param name:
+    :return:
+    """
+    self.s3.Object(self.bucket_name, name).delete()
 
-        :return:
-        """
-        return boto3.client('s3').list_objects(Bucket=self.bucket_name)
+
+def list(self):
+    """
+        lists the files in the raw data bucket
+
+    :return:
+    """
+    return boto3.client('s3').list_objects(Bucket=self.bucket_name)

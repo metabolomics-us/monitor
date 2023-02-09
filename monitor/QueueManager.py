@@ -33,7 +33,7 @@ class QueueManager:
         q = list(filter(lambda x: x['type'] == 'upload', QUEUES))[0]
         return self.__get_queue(f"{q['name']}-{self.host}-{self.stage}")['QueueUrl']
 
-    def preprocess_q(self):
+    def process_q(self):
         q = list(filter(lambda x: x['type'] == 'preprocess', QUEUES))[0]
         return self.__get_queue(f"{q['name']}-{self.host}-{self.stage}")['QueueUrl']
 
@@ -72,22 +72,18 @@ class QueueManager:
 
     def init_queues(self):
         qs = self.sqs.list_queues()
-        logger.debug(qs)
-        queues = qs.get('QueueUrls',[])
+        queues = [item.rsplit('/')[-1] for item in qs.get('QueueUrls',[])]
 
         for q in QUEUES:
             fqqn = f"{q['name']}-{self.host}-{self.stage}"
             logger.debug(f'Checking queue {fqqn}')
-            try:
-                self.sqs.create_queue(QueueName=fqqn)
-                logger.debug(f'Queue {fqqn} created')
-            except ClientError as ex:
-                logger.debug(f'Queue {fqqn} exists', ex.args)
-                pass
 
-            # TODO: Fix the above hack!!! Finish the following code, it's a better way to do it
-            # if fqqn not in queues:
-            #     self.sqs.create_queue(QueueName=fqqn)
-            #     logger.info(f'Queue {fqqn} created')
-            # else:
-            #     logger.info(f'Queue {fqqn} already exists')
+            try:
+                if fqqn not in queues:
+                    self.sqs.create_queue(QueueName=fqqn)
+                    logger.debug(f'\tQueue {fqqn} created')
+                else:
+                    logger.debug(f'\tQueue {fqqn} already exists')
+            except ClientError as ex:
+                logger.error(f'Error creating queue', ex.args)
+                pass

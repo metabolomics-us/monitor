@@ -64,7 +64,7 @@ class Scheduler(Thread):
 
         while self.running:
             try:
-                item = self.queue_mgr.get_next_message(self.queue_mgr.preprocess_q())
+                item = self.queue_mgr.get_next_message(self.queue_mgr.process_q())
                 if not item:
                     logger.debug('\twaiting...')
                     time.sleep(2.7)
@@ -114,7 +114,7 @@ class Scheduler(Thread):
                 self.fail_sample(item, '', reason=msg)
 
             finally:
-                logger.info(f'Scheduler queue size: {self.queue_mgr.get_size(self.queue_mgr.preprocess_q())}')
+                logger.info(f'Scheduler queue size: {self.queue_mgr.get_size(self.queue_mgr.process_q())}')
 
         logger.info(f'Stopping {self.name}')
         self.join()
