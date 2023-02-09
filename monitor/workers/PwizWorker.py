@@ -231,7 +231,7 @@ class PwizWorker(Thread):
             logger.info(f'\tAdd "{status}" status to stasis for sample "{file_basename}.{extension}"')
             self.stasis_cli.sample_state_update(file_basename, status, f'{file_basename}.{extension}')
         except Exception as ex:
-            logger.error(f'\tStasis client can\'t send "{status}" status for sample {file_basename}. '
+            logger.error(f'\tStasis client can\'t send "{status}" status for sample "{file_basename}". '
                           f'\tResponse: {str(ex)}')
             pass
 
@@ -240,7 +240,7 @@ class PwizWorker(Thread):
             logger.error(f'\tAdd "failed" conversion status to stasis for sample "{file_basename}{extension}"')
             self.stasis_cli.sample_state_update(file_basename, 'failed', reason=reason)
         except Exception as ex:
-            logger.error(f'\tStasis client can\'t send "failed" status for sample {file_basename}{extension}. '
+            logger.error(f'\tStasis client can\'t send "failed" status for sample "{file_basename}{extension}". '
                           f'\tResponse: {str(ex)}')
 
     def update_output(self, item):

@@ -119,18 +119,18 @@ class BucketWorker(Thread):
 
     def pass_sample(self, file_basename, extension="mzml"):
         try:
-            logger.info(f'\tAdd "uploaded_raw" status to stasis for sample {file_basename}.{extension}')
+            logger.info(f'\tAdd "uploaded_raw" status to stasis for sample "{file_basename}.{extension}"')
             self.stasis_cli.sample_state_update(file_basename, 'uploaded_raw', f'{file_basename}.mzml')
         except Exception as ex:
-            logger.error(f'\tStasis client can\'t send "uploaded_raw" status for sample {file_basename}. '
+            logger.error(f'\tStasis client can\'t send "uploaded_raw" status for sample "{file_basename}". '
                           f'\tResponse: {str(ex)}')
 
     def fail_sample(self, file_basename, extension, reason):
         try:
-            logger.error(f'\tAdd "failed" upload status to stasis for sample {file_basename}.{extension}')
+            logger.error(f'\tAdd "failed" upload status to stasis for sample "{file_basename}.{extension}"')
             self.stasis_cli.sample_state_update(file_basename, 'failed', reason=reason)
         except Exception as ex:
-            logger.error(f'\tStasis client can\'t send "failed" status for sample {file_basename}.{extension}. '
+            logger.error(f'\tStasis client can\'t send "failed" status for sample "{file_basename}.{extension}". '
                           f'\tResponse: {str(ex)}')
 
     def exists(self, filename):
