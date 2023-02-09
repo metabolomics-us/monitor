@@ -82,5 +82,13 @@ def test_qm(mocks):
     return QueueManager(stage='test')
 
 @pytest.fixture
-def observer_factory():
-    return ObserverFactory()
+def observer_factory_eclipse():
+    of = ObserverFactory()
+    of.platform = 'eclipse'
+    return of
+
+@pytest.fixture
+def observer_factory_other():
+    of = ObserverFactory()
+    of.platform = 'other'
+    return of

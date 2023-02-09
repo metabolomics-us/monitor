@@ -17,7 +17,6 @@ class ObserverFactory:
     def __init__(self):
         self.platform = platform.node()
         logger.info(f'Runing on platform {self.platform}')
-        print(f'Runing on platform {self.platform}')
 
     def getObserver(self) -> BaseObserver:
         if self.platform == 'eclipse':
