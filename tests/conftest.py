@@ -9,6 +9,7 @@ import yamlconf
 from cisclient.client import CISClient
 from stasis_client.client import StasisClient
 
+from monitor.ObserverFactory import ObserverFactory
 from monitor.QueueManager import QueueManager
 
 
@@ -79,3 +80,15 @@ def test_qm(mocks):
     logging.getLogger().root.setLevel('DEBUG')
 
     return QueueManager(stage='test')
+
+@pytest.fixture
+def observer_factory_eclipse():
+    of = ObserverFactory()
+    of.platform = 'eclipse'
+    return of
+
+@pytest.fixture
+def observer_factory_other():
+    of = ObserverFactory()
+    of.platform = 'other'
+    return of
