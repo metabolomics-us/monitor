@@ -97,14 +97,14 @@ class PwizWorker(Thread):
                 if self.config['monitor']['exists']:
                     logger.debug(f"Skipping non-existent files")
                     if not self.stasis_cli.sample_acquisition_exists(file_basename):
-                        logger.info('File not in stasis, skipping.')
+                        logger.info(f'Sample {file_basename} not in stasis, skipping.')
                         continue
 
                 # check if sample has been converted and uploaded already
                 exists = self.bucket.exists(f'{file_basename}.mzml')
 
                 if exists:
-                    logger.info(f'File {file_basename}.mzml converted, uploaded and newer than 30 days, skipping.')
+                    logger.info(f'Sample {file_basename} converted, uploaded and newer than 30 days, skipping.')
                     continue
 
                 logger.info(f'Starting conversion of {item}')
