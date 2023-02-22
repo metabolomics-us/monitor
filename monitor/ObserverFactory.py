@@ -16,10 +16,11 @@ class ObserverFactory:
 
     def __init__(self):
         self.platform = platform.node()
-        logger.info(f'Runing on platform {self.platform}')
 
     def getObserver(self) -> BaseObserver:
         if self.platform == 'eclipse':
+            logger.info(f'Creating regular Observer for local monitoring')
             return Observer()
         else:
+            logger.info(f'Creating PollingObserver for remote folder monitoring')
             return PollingObserver()
