@@ -22,7 +22,7 @@ logger = logging.getLogger('Monitor')
 h = watchtower.CloudWatchLogHandler(
     log_group_name=f'/lcb/monitor/{platform.node()}',
     log_group_retention_days=3,
-    send_interval=30)
+    send_interval=10)
 logger.addHandler(h)
 
 
