@@ -79,7 +79,7 @@ class BucketWorker(Thread):
 
                 logger.info(f'Uploading {item} ({os.path.getsize(item)} bytes) to {self.bucket.bucket_name}')
                 remote_name = self.bucket.save(item)
-
+               
                 if remote_name:
                     logger.info(f'\tFile {remote_name} saved to {self.bucket.bucket_name}')
                     self.pass_sample(file_basename, extension)
@@ -88,6 +88,7 @@ class BucketWorker(Thread):
                     if self.schedule:
                         logger.info('\tAdding "{file_basename}" to scheduling queue.')
                         self.queue_mgr.put_message(self.queue_mgr.process_q(), file_basename)
+
                 else:
                     self.fail_sample(file_basename, 'mzml',
                                      reason='some unknown error happened while uploading the file')
@@ -111,8 +112,11 @@ class BucketWorker(Thread):
                 self.fail_sample(file_basename, 'mzml', reason=str(ex))
 
             finally:
-                pass
-                # logger.info(f'Uploader queue size: {self.queue_mgr.get_size(self.queue_mgr.upload_q())}')
+                # delete converted file silently in case of errors
+                try:
+                    os.remove(item)
+                except:
+                    pass
 
         logger.info(f'\tStopping {self.name}')
         self.join()
