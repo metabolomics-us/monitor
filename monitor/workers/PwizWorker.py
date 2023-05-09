@@ -7,6 +7,7 @@ import re
 import subprocess
 import tempfile
 import time
+import simplejson as json
 from os.path import getsize, join
 from pathlib import Path
 from threading import Thread, Lock, local
@@ -123,13 +124,21 @@ class PwizWorker(Thread):
 
                     except subprocess.CalledProcessError as cpe:
                         logger.warning(f'Conversion of {item} failed.')
-                        logger.error({'command': cpe.cmd,
-                                       'exit_code': cpe.returncode,
-                                       'output': cpe.output,
-                                       'stdout': cpe.stdout,
-                                       'stderr': cpe.stderr})
 
-                        self.fail_sample(file_basename, extension, reason=str(cpe))
+                        error = {'command': cpe.cmd,
+                                 'exit_code': cpe.returncode,
+                                 'output': cpe.output.decode('ascii'),
+                                 'stdout': cpe.stdout.decode('ascii'),
+                                 'stderr': cpe.stderr.decode('ascii')}
+
+                        if error['stderr'] == '':
+                            print('empty stderr, adding stdout')
+                            error['stderr'] = [i for i in error['stdout'].split('\n') if i]
+
+                        # logger.error("\n\n"+str(error)+"\n\n")
+                        logger.error("\n" + str(error['stderr']) + "\n")
+
+                        self.fail_sample(file_basename, extension, reason=json.dumps(error, use_decimal=True))
 
                 size = self.queue_mgr.get_size(self.queue_mgr.conversion_q())
                 logger.info(f'Conversion queue size: {size}')
@@ -173,7 +182,7 @@ class PwizWorker(Thread):
         pw_args = [self.runner, item, *self.args, storage.lower()]
 
         logger.info(f'\tRunning ProteoWizard: {pw_args}')
-        result = subprocess.run(pw_args, stdout=subprocess.PIPE, check=True)
+        result = subprocess.run(pw_args, capture_output=True, check=True)
 
         if result.returncode == 0:
             resout = re.search(r'writing output file: (.*?)\n', result.stdout.decode('ascii')).group(1).strip()
@@ -187,7 +196,12 @@ class PwizWorker(Thread):
         else:
             # update tracking status
             logger.warning(f'\tSetting {item} as failed')
-            self.fail_sample(file_basename, "mzml", reason=result.stdout.decode('ascii'))
+            error = {'exit_code': result.returncode,
+                     'stdout': result.stdout.decode('utf-8'),
+                     'stderr': result.stderr.decode('utf-8')}
+            logger.error(error)
+
+            self.fail_sample(file_basename, "mzml", reason=json.dumps(error, use_decimal=True))
 
     def get_file_size(self, path):
         return os.stat(path).st_size
@@ -238,10 +252,16 @@ class PwizWorker(Thread):
     def pass_sample(self, status, file_basename, extension):
         try:
             logger.info(f'\tAdd "{status}" status to stasis for sample "{file_basename}.{extension}"')
-            self.stasis_cli.sample_state_update(file_basename, status, f'{file_basename}.{extension}')
+            reason = ''
+            if status == 'acquired':
+                reason = f'Raw data file discovered by Monitor running on {platform.node()}'
+            elif status == 'converted':
+                reason = f'Raw data file {status} by Monitor running on {platform.node()}'
+
+            self.stasis_cli.sample_state_update(file_basename, status, f'{file_basename}.{extension}', reason=reason)
         except Exception as ex:
             logger.error(f'\tStasis client can\'t send "{status}" status for sample "{file_basename}". '
-                          f'\tResponse: {str(ex)}')
+                         f'\tResponse: {str(ex)}')
             pass
 
     def fail_sample(self, file_basename, extension, reason: str):
@@ -250,7 +270,7 @@ class PwizWorker(Thread):
             self.stasis_cli.sample_state_update(file_basename, 'failed', reason=reason)
         except Exception as ex:
             logger.error(f'\tStasis client can\'t send "failed" status for sample "{file_basename}". '
-                          f'\tResponse: {str(ex)}')
+                         f'\tResponse: {str(ex)}')
 
     def update_output(self, item):
         mxid = re.search(r'^(mx\d{6,7})_|_(mx\d{6,7})_', item, re.IGNORECASE + re.DOTALL + re.MULTILINE)

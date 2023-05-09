@@ -124,7 +124,8 @@ class BucketWorker(Thread):
     def pass_sample(self, file_basename, extension="mzml"):
         try:
             logger.info(f'\tAdd "uploaded_raw" status to stasis for sample "{file_basename}.{extension}"')
-            self.stasis_cli.sample_state_update(file_basename, 'uploaded_raw', f'{file_basename}.mzml')
+            self.stasis_cli.sample_state_update(file_basename, 'uploaded_raw', f'{file_basename}.mzml',
+                                                reason=f'File uploaded by Monitor running on {platform.node()}')
         except Exception as ex:
             logger.error(f'\tStasis client can\'t send "uploaded_raw" status for sample "{file_basename}". '
                           f'\tResponse: {str(ex)}')

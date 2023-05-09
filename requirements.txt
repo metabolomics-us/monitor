@@ -17,3 +17,6 @@ moto
 pytest
 setuptools==67.2.0
 psutil
+
+# transitive ded missing in stasis-client
+pyparsing
