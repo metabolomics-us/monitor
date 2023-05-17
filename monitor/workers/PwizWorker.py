@@ -102,9 +102,9 @@ class PwizWorker(Thread):
                         continue
 
                 # check if sample has been converted and uploaded already
-                exists = self.bucket.exists(f'{file_basename}.mzml')
+                converted = self.bucket.exists(f'{file_basename}.mzml')
 
-                if exists:
+                if converted and self.config['monitor']['update_new']:
                     logger.info(f'Sample {file_basename} converted, uploaded and newer than 30 days, skipping.')
                     continue
 
