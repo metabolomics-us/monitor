@@ -11,7 +11,7 @@ from watchdog.events import RegexMatchingEventHandler
 from monitor.QueueManager import QueueManager
 
 FOLDERS_RX = r'^.*?\.d$'
-FILES_RX = r'^.*?\.(:?raw|wiff|mzml)$'
+FILES_RX = r'^.*?\.(?:raw|wiff|mzml)$'
 
 logger = logging.getLogger('RawDataEventHandler')
 h = watchtower.CloudWatchLogHandler(

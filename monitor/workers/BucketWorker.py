@@ -75,7 +75,8 @@ class BucketWorker(Thread):
                     time.sleep(1.7)
                     continue
 
-                file_basename, extension = str(item.split(os.sep)[-1]).rsplit('.', 1)
+                file_basename, extension = str(item.split(os.path.sep)[-1]).rsplit('.', 1)
+                logger.debug(f'base: {file_basename}\titem: {item}')
 
                 logger.info(f'Uploading {item} ({os.path.getsize(item)} bytes) to {self.bucket.bucket_name}')
                 remote_name = self.bucket.save(item)

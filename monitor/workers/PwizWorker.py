@@ -7,11 +7,11 @@ import re
 import subprocess
 import tempfile
 import time
-import simplejson as json
 from os.path import getsize, join
 from pathlib import Path
 from threading import Thread, Lock, local
 
+import simplejson as json
 import watchtower
 from stasis_client.client import StasisClient
 
@@ -84,9 +84,9 @@ class PwizWorker(Thread):
                     time.sleep(1.7)
                     continue
 
-                splits = str(item.split(os.sep)[-1]).rsplit('.', 1)
+                splits = str(item.split(os.path.sep)[-1]).rsplit('.', 1)
                 file_basename = splits[0]
-                logger.debug(f'base: {file_basename}')
+                logger.debug(f'base: {file_basename}\titem: {item}')
                 extension = splits[1] if len(splits) == 2 else ''
 
                 result = [re.search(x, item) is not None for x in self.config['monitor']['skip']]
@@ -132,7 +132,6 @@ class PwizWorker(Thread):
                                  'stderr': cpe.stderr.decode('ascii')}
 
                         if error['stderr'] == '':
-                            print('empty stderr, adding stdout')
                             error['stderr'] = [i for i in error['stdout'].split('\n') if i]
 
                         # logger.error("\n\n"+str(error)+"\n\n")
@@ -187,11 +186,17 @@ class PwizWorker(Thread):
         if result.returncode == 0:
             resout = re.search(r'writing output file: (.*?)\n', result.stdout.decode('ascii')).group(1).strip()
 
+            mzmlfile = f'{storage}{os.path.sep}{file_basename}.mzml'
+
+            if mzmlfile != resout:
+                logger.warning(f'Sample {file_basename} was acquired as {resout}. Forcing rename')
+                os.rename(resout, mzmlfile)
+
             # update tracking status and upload to aws
             self.pass_sample('converted', file_basename, extension)
 
-            logger.info(f'\tAdd {resout} to upload queue')
-            self.queue_mgr.put_message(self.queue_mgr.upload_q(), resout)
+            logger.info(f'\tAdd {mzmlfile} to upload queue')
+            self.queue_mgr.put_message(self.queue_mgr.upload_q(), mzmlfile)
 
         else:
             # update tracking status

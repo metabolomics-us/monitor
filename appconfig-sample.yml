@@ -33,6 +33,9 @@ monitor:
   # Enables checking if sample exists in dynamo before conversion. Options: True, False. Default: False
   exists: True
 
+  # Enables skipping conversion of files if they have been created in the last 30 days. Options: True, False. Default: False
+  update_new: False
+
 cis:
   url_var: 'PROD_CIS_API_URL'
   api_key_var: 'PROD_CIS_API_TOKEN'
