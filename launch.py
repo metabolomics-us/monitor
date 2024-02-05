@@ -77,8 +77,8 @@ if __name__ == "__main__":
         stasis_cli.logger.level = 'DEBUG'
         # cis_cli.logger.level = 'DEBUG'
 
-    logger.info("Stasis URL: ", stasis_cli._url)
-    logger.info("Cis URL: ", cis_cli._url)
+    logger.info('Stasis URL: ' + stasis_cli._url)
+    logger.info('Cis URL: ' + cis_cli._url)
 
     queue_mgr = QueueManager(stage)
 
