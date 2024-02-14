@@ -97,8 +97,6 @@ class PwizWorker(Thread):
                 # check if sample exists in stasis first
                 if self.config['monitor']['exists']:
                     in_stasis = self.stasis_cli.sample_acquisition_exists(file_basename)
-                    logger.info(f"\n\nSTASIS CHECK: in_stasis: {in_stasis}\n")
-
                     if not in_stasis:
                         logger.info(f'Sample {file_basename} not in stasis, skipping.')
                         continue
