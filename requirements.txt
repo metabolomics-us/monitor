@@ -4,7 +4,6 @@ yamlconf
 watchdog
 boto3
 botocore
-loguru
 pywin32
 retry
 watchtower
@@ -18,5 +17,5 @@ pytest
 setuptools==67.2.0
 psutil
 
-# transitive ded missing in stasis-client
+# transitive dep missing in stasis-client
 pyparsing

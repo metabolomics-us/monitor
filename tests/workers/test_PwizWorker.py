@@ -1,10 +1,12 @@
+import logging
 import os
 import tempfile
 
 import psutil as psutil
-from loguru import logger
 
 from monitor.workers.PwizWorker import PwizWorker
+
+logger = logging.getLogger(__name__)
 
 
 def __test_file_open__(fpath):
