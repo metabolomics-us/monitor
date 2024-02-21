@@ -5,6 +5,7 @@ import os
 from datetime import datetime, timezone, timedelta
 
 import boto3
+import botocore
 from botocore.exceptions import ClientError
 
 logger = logging.getLogger('BucketWorker')
@@ -61,9 +62,9 @@ class Bucket:
             age = (datetime.now(timezone.utc) - file.last_modified)
 
             if age < timedelta(days=30):
-                return True     # newer than 30 days, skip conversion
+                return True  # newer than 30 days, skip conversion
             else:
-                return False    # older than 30 days, trigger conversion
+                return False  # older than 30 days, trigger conversion
 
         except ClientError as e:
             if e.response['Error']['Code'] == "404":
@@ -73,20 +74,33 @@ class Bucket:
             logger.info(f'Other exception: {str(other)}')
             raise other
 
+    def object_head(self, filename) -> bool:
+        try:
+            boto3.client('s3').head_object(Bucket=self.bucket_name, Key=filename)
+            logger.info(f"Key: '{filename}' found!")
+            return True
+        except botocore.exceptions.ClientError as e:
+            if e.response["Error"]["Code"] == "404":
+                logger.error(f"Key: '{filename}' does not exist!")
+            else:
+                logger.error("Something else went wrong")
 
-def delete(self, name):
-    """
-        deletes the given data entry
-    :param name:
-    :return:
-    """
-    self.s3.Object(self.bucket_name, name).delete()
+            return False
 
 
-def list(self):
-    """
-        lists the files in the raw data bucket
+    def delete(self, name):
+        """
+            deletes the given data entry
+        :param name:
+        :return:
+        """
+        self.s3.Object(self.bucket_name, name).delete()
 
-    :return:
-    """
-    return boto3.client('s3').list_objects(Bucket=self.bucket_name)
+
+    def list(self):
+        """
+            lists the files in the raw data bucket
+
+        :return:
+        """
+        return boto3.client('s3').list_objects(Bucket=self.bucket_name)

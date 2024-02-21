@@ -32,7 +32,7 @@ def test_upload(mocks, stasis_cli, wconfig, test_qm):
     time.sleep(1)
     worker.join(timeout=10)
 
-    response = bucket.exists(filename)
+    response = bucket.object_head(filename)
     logger.info(f'{filename} exists: {response}')
 
     assert response is True

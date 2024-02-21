@@ -81,10 +81,10 @@ class BucketWorker(Thread):
                 logger.info(f'Uploading {item} ({os.path.getsize(item)} bytes) to {self.bucket.bucket_name}')
                 remote_name = self.bucket.save(item)
 
-                time.sleep(1)   # giving time to S3 to finish uploading the sample
+                time.sleep(1)  # giving time to S3 to finish uploading the sample
 
                 # paranoid checking if sample is still in the bucket
-                exists = self.stasis_cli.sample_raw_data_exists(item)
+                exists = self.bucket.object_head(item)
                 logger.info(f'\tFile upload correctly?  ${exists}')
 
                 if remote_name and exists:
@@ -135,7 +135,7 @@ class BucketWorker(Thread):
                                                 reason=f'File uploaded by Monitor running on {platform.node()}')
         except Exception as ex:
             logger.error(f'\tStasis client can\'t send "uploaded_raw" status for sample "{file_basename}". '
-                          f'\tResponse: {str(ex)}')
+                         f'\tResponse: {str(ex)}')
 
     def fail_sample(self, file_basename, extension, reason):
         try:
@@ -143,7 +143,7 @@ class BucketWorker(Thread):
             self.stasis_cli.sample_state_update(file_basename, 'failed', reason=reason)
         except Exception as ex:
             logger.error(f'\tStasis client can\'t send "failed" status for sample "{file_basename}.{extension}". '
-                          f'\tResponse: {str(ex)}')
+                         f'\tResponse: {str(ex)}')
 
     def exists(self, filename):
         return self.bucket.exists(filename)
