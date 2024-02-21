@@ -80,8 +80,14 @@ class BucketWorker(Thread):
 
                 logger.info(f'Uploading {item} ({os.path.getsize(item)} bytes) to {self.bucket.bucket_name}')
                 remote_name = self.bucket.save(item)
-               
-                if remote_name:
+
+                time.sleep(1)   # giving time to S3 to finish uploading the sample
+
+                # paranoid checking if sample is still in the bucket
+                exists = self.stasis_cli.sample_raw_data_exists(item)
+                logger.info(f'\tFile upload correctly?  ${exists}')
+
+                if remote_name and exists:
                     logger.info(f'\tFile {remote_name} saved to {self.bucket.bucket_name}')
                     self.pass_sample(file_basename, extension)
 

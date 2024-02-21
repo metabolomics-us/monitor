@@ -1,12 +1,12 @@
+import logging
 import os
 import shutil
 import time
 
-from loguru import logger
-
 from monitor.Bucket import Bucket
 from monitor.workers.BucketWorker import BucketWorker
 
+logger = logging.getLogger(__name__)
 
 def test_upload(mocks, stasis_cli, wconfig, test_qm):
     test_qm.clean(test_qm.upload_q())
