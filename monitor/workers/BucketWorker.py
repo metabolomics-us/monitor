@@ -83,13 +83,19 @@ class BucketWorker(Thread):
 
                 time.sleep(1)  # giving time to S3 to finish uploading the sample
 
-                # paranoid checking if sample is still in the bucket
-                exists = self.bucket.object_head(item)
-                logger.info(f'\tFile upload correctly?  ${exists}')
 
-                if remote_name and exists:
+                if remote_name:
                     logger.info(f'\tFile {remote_name} saved to {self.bucket.bucket_name}')
-                    self.pass_sample(file_basename, extension)
+
+                    # paranoid checking if sample is still in the bucket
+                    key = f'{file_basename}.{extension}'
+                    exists = self.bucket.object_head(key)
+                    logger.info(f'\tFile {key} upload correctly? {exists}')
+                    if exists:
+                        self.pass_sample(file_basename, extension)
+                    else:
+                        self.fail_sample(file_basename, 'mzml',
+                                         reason=f'After successful upload the file {key} was not found on S3')
 
                     # auto preprocess causes too many issues
                     if self.schedule:
