@@ -24,23 +24,21 @@ def pytest_generate_tests(metafunc):
 
 @pytest.fixture
 def mocks():
-    s3 = moto.mock_s3()
-    s3.start()
+    mock = moto.mock_aws()
+    mock.start()
 
-    sqs = moto.mock_sqs()
-    sqs.start()
-
-    ddb = moto.mock_dynamodb()
-    ddb.start()
+    # sqs = moto.mock_sqs()
+    # sqs.start()
+    #
+    # ddb = moto.mock_dynamodb()
+    # ddb.start()
 
     ress3 = boto3.client('s3')
     ress3.create_bucket(Bucket='datatest-carrot',
                         CreateBucketConfiguration={'LocationConstraint': 'us-west-2'})
 
     yield
-    sqs.stop()
-    s3.stop()
-    ddb.stop()
+    mock.stop()
     pass
 
 

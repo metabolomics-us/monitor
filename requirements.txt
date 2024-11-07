@@ -7,14 +7,12 @@ botocore
 pywin32
 retry
 watchtower
-git+https://github.com/metabolomics-us/carpy.git@master#egg=cis-client&subdirectory=cis-client
-git+https://github.com/metabolomics-us/carpy.git@master#egg=stasis-client&subdirectory=stasis-client
 
 # test deps
 mock
 moto
 pytest
-setuptools==67.2.0
+setuptools
 psutil
 
 # transitive dep missing in stasis-client

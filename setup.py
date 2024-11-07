@@ -21,8 +21,6 @@ setup(name='Monitor',
           'pywin32',
           'retry',
           'watchtower',
-          'git+https://github.com/metabolomics-us/carpy.git@master#egg=cis-client&subdirectory=cis-client'
-          'git+https://github.com/metabolomics-us/carpy.git@master#egg=stasis-client&subdirectory=stasis-client',
       ],
       include_package_data=True,
       zip_safe=False,

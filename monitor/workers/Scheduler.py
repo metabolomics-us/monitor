@@ -7,11 +7,9 @@ from time import sleep
 import boto3
 import simplejson as json
 import watchtower
-from cisclient.client import CISClient
-from cisclient.exceptions import CisClientException
-from stasis_client.client import StasisClient
 
 from monitor.QueueManager import QueueManager
+from monitor.client.BackendClient import BackendClient
 from monitor.exceptions import NoProfileException, SampleNotFoundException, JobDataStoreException
 
 logger = logging.getLogger('Scheduler')
@@ -26,17 +24,15 @@ class Scheduler(Thread):
     Worker class that schedules samples for preprocessing on AWS
     """
 
-    def __init__(self, parent, stasis: StasisClient, cis: CISClient,
+    def __init__(self, parent, backend_cli: BackendClient,
                  config, queue_mgr: QueueManager,
                  name='Scheduler0', daemon=True):
         """
         Args:
             parent:
                 Instance parent object
-            stasis: StasisClient
+            backend_cli: BackendClient
                 A stasis client instance
-            cis: CisClient
-                A cis client instance
             config:
                 An object containing config settings
             queue_mgr: QueueManager
@@ -52,8 +48,7 @@ class Scheduler(Thread):
         self.parent = parent
         self.running = False
         self.queue_mgr = queue_mgr
-        self.stasis_cli = stasis
-        self.cis_cli = cis
+        self.backend_cli = backend_cli
         self.schedule = config['monitor']['schedule']
         self.test = config['test']
 
@@ -77,7 +72,7 @@ class Scheduler(Thread):
                 if job:
                     logger.info(f'\tSchedule successful. Job id {job["job"]}')
                 else:
-                    self.fail_sample(item, reason='Error getting or creating job to schedule sample.')
+                    self.fail_sample(item, reason='Error getting or creating job to schedule sample.', extension="")
 
             except KeyboardInterrupt:
                 logger.warning(f'\tStopping {self.name} due to Keyboard Interrupt')
@@ -89,11 +84,6 @@ class Scheduler(Thread):
 
             except SampleNotFoundException:
                 msg = f'\tAcquisition data for sample {item} not found'
-                logger.error(msg, exc_info=True)
-                self.fail_sample(item, '', reason=msg)
-
-            except CisClientException as ex:
-                msg = f'\tCisClient error: {ex.args}'
                 logger.error(msg, exc_info=True)
                 self.fail_sample(item, '', reason=msg)
 
@@ -123,7 +113,7 @@ class Scheduler(Thread):
 
         try:
             # get sample data.
-            sample_data = self.stasis_cli.sample_acquisition_get(sample_id)
+            sample_data = self.backend_cli.sample_acquisition_get(sample_id)
 
             logger.debug(json.dumps(sample_data, indent=2))
 
@@ -143,7 +133,7 @@ class Scheduler(Thread):
         logger.debug(f'\tlatest method version: ' + version)
 
         # get profile data
-        profile_list = self.cis_cli.get_unique_method_profiles(method, version)
+        profile_list = self.backend_cli.get_unique_method_profiles(method, version)
         logger.debug(f'\tProfiles: {profile_list}')
 
         if len(profile_list) <= 0:
@@ -159,12 +149,12 @@ class Scheduler(Thread):
         }
 
         logger.debug('\tstoring job...')
-        stored_samples = self.stasis_cli.store_job(job)
+        stored_samples = self.backend_cli.store_job(job)
 
         logger.info(f"\tJob {job['id']} stored successfully.")
 
         if stored_samples:
-            response = self.stasis_cli.schedule_job(job['id'])
+            response = self.backend_cli.schedule_job(job['id'])
 
             logger.info(f"\tSample {sample_id} scheduled successfully.")
             return response
@@ -172,7 +162,7 @@ class Scheduler(Thread):
             raise JobDataStoreException(job['id'])
 
     def _get_latest_version(self, method):
-        versions = self.cis_cli.get_method_last_version(method)
+        versions = self.backend_cli.get_method_last_version(method)
 
         def get_version(item):
             return item['updated']
@@ -187,7 +177,7 @@ class Scheduler(Thread):
     def fail_sample(self, file_basename, extension, reason: str):
         try:
             logger.error(f'\tAdd "failed" scheduling status to stasis for sample "{file_basename}"')
-            self.stasis_cli.sample_state_update(file_basename, 'failed',
+            self.backend_cli.sample_state_update(file_basename, 'failed',
                                                 file_handle=f'{file_basename}.{extension}',
                                                 reason=reason)
         except Exception as ex:
