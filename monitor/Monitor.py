@@ -7,12 +7,11 @@ import time
 from threading import Thread
 
 import watchtower
-from cisclient.client import CISClient
-from stasis_client.client import StasisClient
 
 from monitor.ObserverFactory import ObserverFactory
 from monitor.QueueManager import QueueManager
 from monitor.RawDataEventHandler import RawDataEventHandler
+from monitor.client.BackendClient import BackendClient
 from monitor.workers.BucketWorker import BucketWorker
 from monitor.workers.PwizWorker import PwizWorker
 
@@ -31,8 +30,7 @@ class Monitor(Thread):
     A file monitoring class
     """
 
-    def __init__(self, config, stasis_cli: StasisClient, cis_cli: CISClient,
-                 queue_mgr: QueueManager, daemon=False):
+    def __init__(self, config, backend_cli: BackendClient, queue_mgr: QueueManager, daemon=False):
         """
 
         Args:
@@ -49,8 +47,7 @@ class Monitor(Thread):
         """
         super().__init__(name=platform.node(), daemon=daemon)
         self.config = config
-        self.stasis_cli = stasis_cli
-        self.cis_cli = cis_cli
+        self.backend_cli = backend_cli
         self.running = True
         self.test = config['test']
         self.threads = []
@@ -63,23 +60,16 @@ class Monitor(Thread):
         try:
             # Setup the aws uploader worker
             aws_worker = BucketWorker(self,
-                                      self.stasis_cli,
+                                      self.backend_cli,
                                       self.config,
                                       self.queue_mgr)
 
-            # scheduler = Scheduler(self,
-            #                       self.stasis_cli,
-            #                       self.cis_cli,
-            #                       self.config,
-            #                       self.queue_mgr)
-
-            # threads = [aws_worker, scheduler]
             threads = [aws_worker]
 
             # Setup the pwiz workers
             [threads.append(
                 PwizWorker(self,
-                           self.stasis_cli,
+                           self.backend_cli,
                            self.queue_mgr,
                            self.config,
                            name=f'Converter{x}')
@@ -90,7 +80,7 @@ class Monitor(Thread):
                 t.start()
 
             event_handler = RawDataEventHandler(
-                self.stasis_cli,
+                self.backend_cli,
                 self.queue_mgr,
                 self.config['monitor']['extensions'],
                 test=self.config['test'],

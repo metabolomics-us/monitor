@@ -21,14 +21,14 @@ def __test_file_open__(fpath):
     return False
 
 
-def test_pwizworker(mocks, stasis_cli, wconfig, test_qm):
+def test_pwizworker(mocks, backend_cli, wconfig, test_qm):
     test_qm.clean(test_qm.conversion_q())
     test_qm.clean(test_qm.upload_q())
 
     raw = wconfig['monitor']['paths'][0]
 
     logger.info('creating worker')
-    worker = PwizWorker(None, stasis_cli, test_qm, wconfig)
+    worker = PwizWorker(None, backend_cli, test_qm, wconfig)
 
     worker.start()
 
@@ -53,7 +53,7 @@ def test_pwizworker(mocks, stasis_cli, wconfig, test_qm):
     test_qm.clean(test_qm.upload_q())
 
 
-def test_pwizworker_skip_file_not_in_aws(mocks, stasis_cli, wconfig, test_qm):
+def test_pwizworker_skip_file_not_in_aws(mocks, backend_cli, wconfig, test_qm):
     test_qm.clean(test_qm.conversion_q())
     test_qm.clean(test_qm.upload_q())
 
@@ -61,7 +61,7 @@ def test_pwizworker_skip_file_not_in_aws(mocks, stasis_cli, wconfig, test_qm):
     raw = wconfig['monitor']['paths'][0]
 
     logger.info(f'creating worker')
-    worker = PwizWorker(None, stasis_cli, test_qm, wconfig)
+    worker = PwizWorker(None, backend_cli, test_qm, wconfig)
 
     worker.start()
 

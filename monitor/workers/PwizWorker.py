@@ -13,10 +13,10 @@ from threading import Thread, Lock, local
 
 import simplejson as json
 import watchtower
-from stasis_client.client import StasisClient
 
 from monitor.Bucket import Bucket
 from monitor.QueueManager import QueueManager
+from monitor.client.BackendClient import BackendClient
 
 logger = logging.getLogger('PwizWorker')
 h = watchtower.CloudWatchLogHandler(
@@ -31,14 +31,14 @@ class PwizWorker(Thread):
     Worker class that converts a raw data file to mzml
     """
 
-    def __init__(self, parent, st_cli: StasisClient, queue_mgr: QueueManager, config,
+    def __init__(self, parent, backend_cli: BackendClient, queue_mgr: QueueManager, config,
                  name='Converter0', daemon=True):
         """
 
         Args:
             parent:
                 Instance parent object
-            st_cli: StasisClient
+            backend_cli: BackendClient
                 A stasis client instance
             queue_mgr: QueueManager
                 A QueueManager object that handles setting up queues and sending/receiving messages
@@ -55,7 +55,7 @@ class PwizWorker(Thread):
         self.parent = parent
         self.running = False
         self.queue_mgr = queue_mgr
-        self.stasis_cli = st_cli
+        self.backend_cli = backend_cli
         self.config = config
         self.storage = config['monitor']['storage'] if config['monitor']['storage'].endswith(os.path.sep) else \
             config['monitor']['storage'] + os.path.sep
@@ -96,7 +96,7 @@ class PwizWorker(Thread):
 
                 # check if sample exists in stasis first
                 if self.config['monitor']['exists']:
-                    in_stasis = self.stasis_cli.sample_acquisition_exists(file_basename)
+                    in_stasis = self.backend_cli.sample_acquisition_exists(file_basename)
                     if not in_stasis:
                         logger.info(f'Sample {file_basename} not in stasis, skipping.')
                         continue
@@ -263,7 +263,7 @@ class PwizWorker(Thread):
             elif status == 'converted':
                 reason = f'Raw data file {status} by Monitor running on {platform.node()}'
 
-            self.stasis_cli.sample_state_update(file_basename, status, f'{file_basename}.{extension}', reason=reason)
+            self.backend_cli.sample_state_update(file_basename, status, f'{file_basename}.{extension}', reason=reason)
         except Exception as ex:
             logger.error(f'\tStasis client can\'t send "{status}" status for sample "{file_basename}". '
                          f'\tResponse: {str(ex)}')
@@ -272,7 +272,7 @@ class PwizWorker(Thread):
     def fail_sample(self, file_basename, extension, reason: str):
         try:
             logger.error(f'\tAdd "failed" conversion status to stasis for sample "{file_basename}.{extension}"')
-            self.stasis_cli.sample_state_update(file_basename, 'failed', reason=reason)
+            self.backend_cli.sample_state_update(file_basename, 'failed', reason=reason)
         except Exception as ex:
             logger.error(f'\tStasis client can\'t send "failed" status for sample "{file_basename}". '
                          f'\tResponse: {str(ex)}')

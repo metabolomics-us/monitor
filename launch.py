@@ -9,11 +9,10 @@ import platform
 
 import watchtower
 import yamlconf
-from cisclient.client import CISClient
-from stasis_client.client import StasisClient
 
 from monitor.Monitor import Monitor
 from monitor.QueueManager import QueueManager
+from monitor.client.BackendClient import BackendClient
 
 fmt = '%(levelname)-8s | %(asctime)s | %(threadName)10s | %(filename)-20s:(%(lineno)3s) %(funcName)-20s | %(message)s'
 logging.basicConfig(format=fmt, level='INFO')
@@ -58,28 +57,21 @@ if __name__ == "__main__":
         logger.error(f"Can't find ProteoWizard at {config['monitor']['msconvert']}")
         exit(1)
 
-    stasis_cli = StasisClient(os.getenv(config['stasis']['url_var'], "https://test-api.metabolomics.us/stasis"),
-                              os.getenv(config['stasis']['api_key_var'], "s45LgmYFPv8NbzVUbcIfRQI6NWlF7W09TUUMavx5"))
-    if stasis_cli:
-        logger.info(f'Stasis client initialized. (url: {stasis_cli._url})')
-
-    cis_cli = CISClient(os.getenv(config['cis']['url_var'], "https://test-api.metabolomics.us/cis"),
-                        os.getenv(config['cis']['api_key_var'], "s45LgmYFPv8NbzVUbcIfRQI6NWlF7W09TUUMavx5"))
-
-    if cis_cli:
-        logger.info(f'Cis client initialized. (url: {cis_cli._url})')
+    backend_cli = BackendClient(os.getenv(config['stasis']['url_var'], "https://test-api.metabolomics.us/gostasis"),
+                                os.getenv(config['stasis']['api_key_var'], "s45LgmYFPv8NbzVUbcIfRQI6NWlF7W09TUUMavx5"))
+    if backend_cli:
+        logger.info(f'Stasis client initialized. (url: {backend_cli._url}, url_old: {backend_cli._url_old})')
 
     if args.debug:
         logging.root.setLevel(level='DEBUG')
         logger.debug('Running in debug mode')
         logger.debug('Configuration: ' + json.dumps(config, indent=2))
 
-        stasis_cli.logger.level = 'DEBUG'
-        # cis_cli.logger.level = 'DEBUG'
+        backend_cli.logger.level = 'DEBUG'
 
     logger.info('Stasis URL: ' + stasis_cli._url)
     logger.info('Cis URL: ' + cis_cli._url)
 
     queue_mgr = QueueManager(stage)
 
-    Monitor(config, stasis_cli, cis_cli, queue_mgr).run()
+    Monitor(config, backend_cli, queue_mgr).run()

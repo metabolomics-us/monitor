@@ -9,6 +9,7 @@ from stasis_client.client import StasisClient
 from watchdog.events import RegexMatchingEventHandler
 
 from monitor.QueueManager import QueueManager
+from monitor.client.BackendClient import BackendClient
 
 FOLDERS_RX = r'^.*?\.d$'
 FILES_RX = r'^.*?\.(?:raw|wiff|mzml)$'
@@ -25,7 +26,7 @@ class RawDataEventHandler(RegexMatchingEventHandler):
     A custom file event handler for watchdog
     """
 
-    def __init__(self, st_cli: StasisClient, queue_mgr: QueueManager, extensions, test: bool = False):
+    def __init__(self, backend_cli: BackendClient, queue_mgr: QueueManager, extensions, test: bool = False):
         """
         Args:
             st_cli: StasisClient
@@ -42,7 +43,7 @@ class RawDataEventHandler(RegexMatchingEventHandler):
 
         self.sqs = boto3.client('sqs')
 
-        self.stasis_cli = st_cli
+        self.backend_cli = backend_cli
         self.queue_mgr = queue_mgr
         self.extensions = extensions
         self.test = test

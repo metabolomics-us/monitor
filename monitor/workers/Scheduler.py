@@ -21,7 +21,6 @@ h = watchtower.CloudWatchLogHandler(
     send_interval=30)
 logger.addHandler(h)
 
-
 class Scheduler(Thread):
     """
     Worker class that schedules samples for preprocessing on AWS

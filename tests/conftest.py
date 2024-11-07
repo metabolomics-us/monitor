@@ -6,17 +6,14 @@ import boto3
 import moto
 import pytest
 import yamlconf
-from cisclient.client import CISClient
-from stasis_client.client import StasisClient
 
 from monitor.ObserverFactory import ObserverFactory
 from monitor.QueueManager import QueueManager
+from monitor.client.BackendClient import BackendClient
 
 
 def pytest_generate_tests(metafunc):
-    os.environ['TEST_CIS_API_URL'] = 'https://test-api.metabolomics.us/cis'
-    os.environ['TEST_CIS_API_TOKEN'] = 's45LgmYFPv8NbzVUbcIfRQI6NWlF7W09TUUMavx5'
-    os.environ['TEST_STASIS_API_URL'] = 'https://test-api.metabolomics.us/stasis'
+    os.environ['TEST_STASIS_API_URL'] = 'https://test-api.metabolomics.us/gostasis'
     os.environ['TEST_STASIS_API_TOKEN'] = 's45LgmYFPv8NbzVUbcIfRQI6NWlF7W09TUUMavx5'
     os.environ['AWS_ACCESS_KEY_ID'] = 'testing'
     os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
@@ -60,14 +57,9 @@ def wconfig():
 
 
 @pytest.fixture
-def stasis_cli():
-    stasis_cli = StasisClient(os.getenv('TEST_STASIS_API_URL'), os.getenv('TEST_STASIS_API_TOKEN'))
-    return stasis_cli
-
-
-@pytest.fixture
-def cis_cli():
-    return CISClient(os.getenv('TEST_CIS_API_URL'), os.getenv('TEST_CIS_API_TOKEN'))
+def backend_cli():
+    backend_cli = BackendClient(os.getenv('TEST_STASIS_API_URL'), os.getenv('TEST_STASIS_API_TOKEN'))
+    return backend_cli
 
 
 @pytest.fixture

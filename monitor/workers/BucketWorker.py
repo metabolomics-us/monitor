@@ -10,10 +10,10 @@ from threading import Thread
 
 import boto3
 import watchtower
-from stasis_client.client import StasisClient
 
 from monitor.Bucket import Bucket
 from monitor.QueueManager import QueueManager
+from monitor.client.BackendClient import BackendClient
 
 logger = logging.getLogger('BucketWorker')
 h = watchtower.CloudWatchLogHandler(
@@ -28,15 +28,14 @@ class BucketWorker(Thread):
     Worker class that uploads each file in it's to an S3 bucket and to a local folder to avoid reconversion
     """
 
-    def __init__(self, parent, stasis: StasisClient, config,
-                 queue_mgr: QueueManager,
-                 name='Uploader0', daemon=True):
+    def __init__(self, parent, backend_cli: BackendClient, config, queue_mgr: QueueManager, name='Uploader0',
+                 daemon=True):
         """
 
         Args:
             parent:
                 Instance parent object
-            stasis: StasisClient
+            backend_cli: BackendClient
                 A stasis client instance
             config:
                 An object containing config settings
@@ -54,7 +53,7 @@ class BucketWorker(Thread):
         self.running = False
         self.queue_mgr = queue_mgr
         self.bucket = Bucket(config['aws']['bucket_name'])
-        self.stasis_cli = stasis
+        self.backend_cli = backend_cli
         self.storage = tempfile.tempdir
         self.schedule = config['monitor']['schedule']
         self.test = config['test']
@@ -137,8 +136,8 @@ class BucketWorker(Thread):
     def pass_sample(self, file_basename, extension="mzml"):
         try:
             logger.info(f'\tAdd "uploaded_raw" status to stasis for sample "{file_basename}.{extension}"')
-            self.stasis_cli.sample_state_update(file_basename, 'uploaded_raw', f'{file_basename}.mzml',
-                                                reason=f'File uploaded by Monitor running on {platform.node()}')
+            self.backend_cli.sample_state_update(file_basename, 'uploaded_raw', f'{file_basename}.mzml',
+                                                 reason=f'File uploaded by Monitor running on {platform.node()}')
         except Exception as ex:
             logger.error(f'\tStasis client can\'t send "uploaded_raw" status for sample "{file_basename}". '
                          f'\tResponse: {str(ex)}')
@@ -146,7 +145,7 @@ class BucketWorker(Thread):
     def fail_sample(self, file_basename, extension, reason):
         try:
             logger.error(f'\tAdd "failed" upload status to stasis for sample "{file_basename}.{extension}"')
-            self.stasis_cli.sample_state_update(file_basename, 'failed', reason=reason)
+            self.backend_cli.sample_state_update(file_basename, 'failed', reason=reason)
         except Exception as ex:
             logger.error(f'\tStasis client can\'t send "failed" status for sample "{file_basename}.{extension}". '
                          f'\tResponse: {str(ex)}')

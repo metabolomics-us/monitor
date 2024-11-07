@@ -8,11 +8,11 @@ from monitor.workers.BucketWorker import BucketWorker
 
 logger = logging.getLogger(__name__)
 
-def test_upload(mocks, stasis_cli, wconfig, test_qm):
+def test_upload(mocks, backend_cli, wconfig, test_qm):
     test_qm.clean(test_qm.upload_q())
 
     mzml_file = 'D:\\data\\mzml\\test.mzml'
-    worker = BucketWorker(None, stasis_cli, wconfig, test_qm)
+    worker = BucketWorker(None, backend_cli, wconfig, test_qm)
 
     shutil.copy(mzml_file, os.path.join(worker.storage, 'test.mzml'))
     test_file = os.path.join(worker.storage, 'test.mzml')

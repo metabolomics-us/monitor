@@ -22,7 +22,7 @@ def __delete_files(destination):
     shutil.rmtree(destination, ignore_errors=True)
 
 
-def test_start(config, stasis_cli, cis_cli):
+def test_start(config, backend_cli):
     __delete_files(path.join(config['monitor']['paths'][0], 'extra'))
     __delete_files(path.join(config['monitor']['storage'], 'autoconv'))
 
@@ -32,7 +32,7 @@ def test_start(config, stasis_cli, cis_cli):
     aws_q = sqs.get_queue_url(QueueName='MonitorUploadQueue-test')
     sched_q = sqs.get_queue_url(QueueName='MonitorPreprocessingQueue-test')
 
-    filemon = Monitor(config, stasis_cli, cis_cli, conv_q, aws_q, sched_q)
+    filemon = Monitor(config, backend_cli, conv_q, aws_q)
 
     print('')
     print(f'starting monitor - {time.time_ns()}')
