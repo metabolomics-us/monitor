@@ -57,10 +57,10 @@ if __name__ == "__main__":
         logger.error(f"Can't find ProteoWizard at {config['monitor']['msconvert']}")
         exit(1)
 
-    backend_cli = BackendClient(os.getenv(config['stasis']['url_var'], "https://test-api.metabolomics.us/gostasis"),
-                                os.getenv(config['stasis']['api_key_var'], "s45LgmYFPv8NbzVUbcIfRQI6NWlF7W09TUUMavx5"))
+    backend_cli = BackendClient(os.getenv(config['backend']['url_var'], "https://test-api.metabolomics.us/gostasis"),
+                                os.getenv(config['backend']['api_key_var'], "s45LgmYFPv8NbzVUbcIfRQI6NWlF7W09TUUMavx5"))
     if backend_cli:
-        logger.info(f'Stasis client initialized. (url: {backend_cli._url})')
+        logger.info(f'Backend client initialized. (url: {backend_cli._url})')
 
     if args.debug:
         logging.root.setLevel(level='DEBUG')
