@@ -60,7 +60,7 @@ if __name__ == "__main__":
     backend_cli = BackendClient(os.getenv(config['stasis']['url_var'], "https://test-api.metabolomics.us/gostasis"),
                                 os.getenv(config['stasis']['api_key_var'], "s45LgmYFPv8NbzVUbcIfRQI6NWlF7W09TUUMavx5"))
     if backend_cli:
-        logger.info(f'Stasis client initialized. (url: {backend_cli._url}, url_old: {backend_cli._url_old})')
+        logger.info(f'Stasis client initialized. (url: {backend_cli._url})')
 
     if args.debug:
         logging.root.setLevel(level='DEBUG')
@@ -68,9 +68,6 @@ if __name__ == "__main__":
         logger.debug('Configuration: ' + json.dumps(config, indent=2))
 
         backend_cli.logger.level = 'DEBUG'
-
-    logger.info('Stasis URL: ' + stasis_cli._url)
-    logger.info('Cis URL: ' + cis_cli._url)
 
     queue_mgr = QueueManager(stage)
 
