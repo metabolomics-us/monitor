@@ -55,8 +55,8 @@ def wconfig():
 
 
 @pytest.fixture
-def backend_cli():
-    backend_cli = BackendClient(os.getenv('TEST_STASIS_API_URL'), os.getenv('TEST_STASIS_API_TOKEN'))
+def backend_cli(config):
+    backend_cli = BackendClient(config, os.getenv('TEST_STASIS_API_URL'), os.getenv('TEST_STASIS_API_TOKEN'))
     return backend_cli
 
 

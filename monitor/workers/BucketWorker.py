@@ -47,6 +47,9 @@ class BucketWorker(Thread):
                 Run the worker as daemon. (Optional. Default: True)
         """
         super().__init__(name=name, daemon=daemon)
+        if config['debug']:
+            logger.setLevel(level='DEBUG')
+
         self.sqs = boto3.client('sqs')
 
         self.parent = parent

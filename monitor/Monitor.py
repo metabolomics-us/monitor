@@ -46,6 +46,9 @@ class Monitor(Thread):
                 Run the worker as daemon. (Optional. Default: True)
         """
         super().__init__(name=platform.node(), daemon=daemon)
+        if config['debug']:
+            logger.setLevel(level='DEBUG')
+
         self.config = config
         self.backend_cli = backend_cli
         self.running = True

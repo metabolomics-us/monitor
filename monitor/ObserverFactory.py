@@ -11,6 +11,7 @@ from watchdog.observers.polling import PollingObserver
 
 logger = logging.getLogger('ObserverFactory')
 logger.addHandler(logging.StreamHandler(sys.stdout))
+logger.setLevel(logging.INFO)
 
 class ObserverFactory:
 

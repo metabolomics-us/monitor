@@ -1,19 +1,17 @@
-requests
-simplejson
-yamlconf
-watchdog
 boto3
 botocore
 pywin32
+requests
 retry
+simplejson
+urllib3
+watchdog
 watchtower
+yamlconf
 
 # test deps
 mock
 moto
 pytest
-setuptools
 psutil
-
-# transitive dep missing in stasis-client
-pyparsing
+setuptools

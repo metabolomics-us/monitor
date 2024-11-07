@@ -15,6 +15,7 @@ h = watchtower.CloudWatchLogHandler(
     log_group_retention_days=3,
     send_interval=30)
 logger.addHandler(h)
+logger.setLevel(logging.INFO)
 
 
 class QueueManager:
@@ -76,14 +77,14 @@ class QueueManager:
 
         for q in QUEUES:
             fqqn = f"{q['name']}-{self.host}-{self.stage}"
-            logger.debug(f'Checking queue {fqqn}')
+            logger.info(f'Checking queue {fqqn}')
 
             try:
                 if fqqn not in queues:
                     self.sqs.create_queue(QueueName=fqqn)
-                    logger.debug(f'\tQueue {fqqn} created')
+                    logger.info(f'\tQueue {fqqn} created')
                 else:
-                    logger.debug(f'\tQueue {fqqn} already exists')
+                    logger.info(f'\tQueue {fqqn} already exists')
             except ClientError as ex:
                 logger.error(f'Error creating queue', ex.args)
                 pass

@@ -52,6 +52,9 @@ class PwizWorker(Thread):
         """
         super().__init__(name=name, daemon=daemon)
 
+        if config['debug']:
+            logger.setLevel(level='DEBUG')
+
         self.parent = parent
         self.running = False
         self.queue_mgr = queue_mgr

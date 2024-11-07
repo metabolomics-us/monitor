@@ -50,6 +50,7 @@ if __name__ == "__main__":
     with open(configFile, 'r') as stream:
         config = yamlconf.load(stream)
         config['test'] = args.test
+        config['debug'] = args.debug
 
     if os.path.exists(config['monitor']['msconvert']):
         logger.info('Found ProteoWizard')
@@ -57,17 +58,15 @@ if __name__ == "__main__":
         logger.error(f"Can't find ProteoWizard at {config['monitor']['msconvert']}")
         exit(1)
 
-    backend_cli = BackendClient(os.getenv(config['backend']['url_var'], "https://test-api.metabolomics.us/gostasis"),
+    backend_cli = BackendClient(config, os.getenv(config['backend']['url_var'], "https://test-api.metabolomics.us/gostasis"),
                                 os.getenv(config['backend']['api_key_var'], "s45LgmYFPv8NbzVUbcIfRQI6NWlF7W09TUUMavx5"))
     if backend_cli:
         logger.info(f'Backend client initialized. (url: {backend_cli._url})')
 
     if args.debug:
-        logging.root.setLevel(level='DEBUG')
         logger.debug('Running in debug mode')
         logger.debug('Configuration: ' + json.dumps(config, indent=2))
 
-        backend_cli.logger.level = 'DEBUG'
 
     queue_mgr = QueueManager(stage)
 

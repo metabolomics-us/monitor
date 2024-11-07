@@ -12,7 +12,7 @@ from requests.adapters import HTTPAdapter
 from retry import retry
 from urllib3 import Retry
 
-logger = logging.getLogger('PwizWorker')
+logger = logging.getLogger('BackendClient')
 h = watchtower.CloudWatchLogHandler(
     log_group_name=f'/lcb/monitor/{platform.node()}',
     log_group_retention_days=3,
@@ -24,11 +24,14 @@ RETRY_COUNT = 3
 
 class BackendClient:
 
-    def __init__(self, url: Optional[str] = None, token: Optional[str] = None):
+    def __init__(self, config, url: Optional[str] = None, token: Optional[str] = None):
         """
         the client requires an url where to connect against and the related token.
         """
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = logger
+
+        if config['debug']:
+            self.logger.setLevel(level='DEBUG')
 
         self._url = url
         self._token = token
@@ -61,14 +64,14 @@ class BackendClient:
         logging.debug("configuring http client")
         adapter = HTTPAdapter(max_retries=retry_strategy)
         self.http = requests.Session()
-        logging.debug("utilizing url %s", self._url)
+        self.logger.debug("utilizing url %s", self._url)
 
     @retry(exceptions=Exception, tries=RETRY_COUNT, delay=1, backoff=2)
     def sample_acquisition_exists(self, sample_name) -> bool:
         """
         returns the acquisition data of this sample
         """
-        logging.debug("getting acquisition data for sample %s", sample_name)
+        self.logger.debug("getting acquisition data for sample %s", sample_name)
         result = self.http.get(f'{self._url}/stasis/acquisition/{sample_name}', headers=self._header)
         if result.status_code != 200:
             return False
@@ -79,7 +82,7 @@ class BackendClient:
         """
         returns the acquisition data of this sample
         """
-        logging.debug("getting acquisition data for sample %s", sample_name)
+        self.logger.debug("getting acquisition data for sample %s", sample_name)
         result = self.http.get(f'{self._url}/stasis/acquisition/{sample_name}', headers=self._header)
         if result.status_code == 200:
             return result.json()
@@ -146,10 +149,10 @@ class BackendClient:
             elif result.status_code == 404:
                 return []
             else:
-                logger.error(result.status_code)
+                self.logger.error(result.status_code)
                 raise Exception(result)
         except Exception as ex:
-            logger.error(ex.args)
+            self.logger.error(ex.args)
 
 
     def store_job(self, job: dict, enable_progress_bar: bool = False):
@@ -158,22 +161,22 @@ class BackendClient:
         """
         raise Exception("Not implemented")
 
-        # logging.debug("storing job %s", job['id'])
+        # self.logger.debug("storing job %s", job['id'])
         # from stasis_client.store_job import JobStorage
         # return JobStorage().store(job, enable_progress_bar, self)
 
 
     def schedule_job(self, job_id: str, sample: str = None) -> dict:
         """
-        scheduels a job for calculation
+        schedules a job for calculation
         """
         raise Exception("Not implemented")
 
         # if sample is None:
-        #     logging.debug("schedule job %s", job_id)
+        #     self.logger.debug("schedule job %s", job_id)
         #     response = self.http.put(f"{self._schedule_url}/job/schedule/{job_id}", headers=self._header)
         # else:
-        #     logging.debug(f"schedule job {job_id} and sample {sample}")
+        #     self.logger.debug(f"schedule job {job_id} and sample {sample}")
         #     response = self.http.put(f"{self._schedule_url}/job/schedule/{job_id}/{sample}", headers=self._header)
         # if response.status_code != 200:
         #     raise Exception(
