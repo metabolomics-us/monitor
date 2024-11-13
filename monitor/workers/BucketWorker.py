@@ -58,7 +58,6 @@ class BucketWorker(Thread):
         self.bucket = Bucket(config['aws']['bucket_name'])
         self.backend_cli = backend_cli
         self.storage = tempfile.tempdir
-        self.schedule = config['monitor']['schedule']
         self.test = config['test']
 
     def run(self):
@@ -98,11 +97,6 @@ class BucketWorker(Thread):
                     else:
                         self.fail_sample(file_basename, 'mzml',
                                          reason=f'After successful upload the file {key} was not found on S3')
-
-                    # auto preprocess causes too many issues
-                    if self.schedule:
-                        logger.info('\tAdding "{file_basename}" to scheduling queue.')
-                        self.queue_mgr.put_message(self.queue_mgr.process_q(), file_basename)
 
                 else:
                     self.fail_sample(file_basename, 'mzml',

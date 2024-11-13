@@ -34,10 +34,6 @@ class QueueManager:
         q = list(filter(lambda x: x['type'] == 'upload', QUEUES))[0]
         return self.__get_queue(f"{q['name']}-{self.host}-{self.stage}")['QueueUrl']
 
-    def process_q(self):
-        q = list(filter(lambda x: x['type'] == 'preprocess', QUEUES))[0]
-        return self.__get_queue(f"{q['name']}-{self.host}-{self.stage}")['QueueUrl']
-
     def get_next_message(self, queue_url: str):
         data = self.sqs.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=1, VisibilityTimeout=10)
         msg = {}

@@ -18,10 +18,13 @@ class ObserverFactory:
     def __init__(self):
         self.platform = platform.node()
 
-    def getObserver(self) -> BaseObserver:
-        if self.platform == 'eclipse':
+    def getObserver(self, mode) -> BaseObserver:
+        if mode == 'local':
             logger.info(f'Creating regular Observer for local monitoring')
             return Observer()
-        else:
+        elif mode == 'remote':
             logger.info(f'Creating PollingObserver for remote folder monitoring')
             return PollingObserver()
+        else:
+            logger.info(f'Invalid mode, check your configuration')
+            quit()

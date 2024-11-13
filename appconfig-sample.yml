@@ -27,8 +27,8 @@ monitor:
   # Full path to ProteoWizard msconvert tool
   msconvert: 'C:\tools\pwiz\msconvert.exe'
 
-  # Enables automatic scheduling of converted samples. Options: True, False. Default: False
-  schedule: False
+  # Enables 'local' or 'remote' folder monitoring. Options: local, remote. Default: local
+  mode: 'local'
 
   # Enables checking if sample exists in dynamo before conversion. Options: True, False. Default: False
   exists: True
@@ -36,11 +36,7 @@ monitor:
   # Enables skipping conversion of files if they have been created in the last 30 days. Options: True, False. Default: False
   update_new: False
 
-cis:
-  url_var: 'PROD_CIS_API_URL'
-  api_key_var: 'PROD_CIS_API_TOKEN'
-
-stasis:
+backend:
   url_var: 'PROD_STASIS_API_URL'
   api_key_var: 'PROD_STASIS_API_TOKEN'
 

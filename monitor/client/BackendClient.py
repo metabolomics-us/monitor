@@ -155,33 +155,3 @@ class BackendClient:
                 raise Exception(result)
         except Exception as ex:
             self.logger.error(ex.args)
-
-
-    def store_job(self, job: dict, enable_progress_bar: bool = False):
-        """
-        stores a job in the system in preparation for scheduling
-        """
-        raise Exception("Not implemented")
-
-        # self.logger.debug("storing job %s", job['id'])
-        # from stasis_client.store_job import JobStorage
-        # return JobStorage().store(job, enable_progress_bar, self)
-
-
-    def schedule_job(self, job_id: str, sample: str = None) -> dict:
-        """
-        schedules a job for calculation
-        """
-        raise Exception("Not implemented")
-
-        # if sample is None:
-        #     self.logger.debug("schedule job %s", job_id)
-        #     response = self.http.put(f"{self._schedule_url}/job/schedule/{job_id}", headers=self._header)
-        # else:
-        #     self.logger.debug(f"schedule job {job_id} and sample {sample}")
-        #     response = self.http.put(f"{self._schedule_url}/job/schedule/{job_id}/{sample}", headers=self._header)
-        # if response.status_code != 200:
-        #     raise Exception(
-        #         f"we observed an error. Status code was {response.status_code} and error was {response.reason} for {job_id}")
-        # else:
-        #     return json.loads(response.content)

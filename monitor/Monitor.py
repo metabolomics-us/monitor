@@ -58,7 +58,7 @@ class Monitor(Thread):
 
     def run(self):
         """Starts the monitoring of the selected folders"""
-        observer = ObserverFactory().getObserver()
+        observer = ObserverFactory().getObserver(self.config['monitor']['mode'])
 
         try:
             # Setup the aws uploader worker
