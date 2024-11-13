@@ -58,8 +58,8 @@ if __name__ == "__main__":
         logger.error(f"Can't find ProteoWizard at {config['monitor']['msconvert']}")
         exit(1)
 
-    backend_cli = BackendClient(config, os.getenv(config['backend']['url_var'], "https://test-api.metabolomics.us/gostasis"),
-                                os.getenv(config['backend']['api_key_var'], "s45LgmYFPv8NbzVUbcIfRQI6NWlF7W09TUUMavx5"))
+    backend_cli = BackendClient(config, os.getenv(config['backend']['url_var'], "https://test-api.metabolomics.us"),
+                                os.getenv(config['backend']['api_key_var'], "9MjbJRbAtj8spCJJVTPbP3YWc4wjlW0c7AP47Pmi"))
     if backend_cli:
         logger.info(f'Backend client initialized. (url: {backend_cli._url})')
 

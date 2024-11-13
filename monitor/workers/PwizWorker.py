@@ -83,18 +83,27 @@ class PwizWorker(Thread):
             try:
                 item = self.queue_mgr.get_next_message(self.queue_mgr.conversion_q())
                 if not item:
-                    logger.debug('\twaiting...')
+                    # logger.debug('\twaiting...')
                     time.sleep(1.7)
                     continue
 
                 splits = str(item.split(os.path.sep)[-1]).rsplit('.', 1)
                 file_basename = splits[0]
-                logger.debug(f'base: {file_basename}\titem: {item}')
                 extension = splits[1] if len(splits) == 2 else ''
 
-                result = [re.search(x, item) is not None for x in self.config['monitor']['skip']]
+                # result = [re.search(x, item) is not None for x in self.config['monitor']['skip']]
+                result = []
+                matched = ""
+                for x in self.config['monitor']['skip']:
+                    if re.search(x, item) is not None:
+                        result.append(True)
+                        matched=x
+                        break
+                    else:
+                        result.append(False)
+
                 if any(result):
-                    logger.info(f'\tSkipping conversion of invalid sample: {item}.')
+                    logger.info(f'\tSkipping conversion of invalid sample: {item}. Matched pattern: {matched}')
                     continue
 
                 # check if sample exists in stasis first
@@ -116,7 +125,7 @@ class PwizWorker(Thread):
                 self.wait_for_item(item)
 
                 if item.endswith('.mzml'):
-                    self.queue_mgr.put_message(self.queue_mgr.upload_q, item)
+                    self.queue_mgr.put_message(self.queue_mgr.upload_q(), item)
                 else:
                     # add acquired status
                     self.pass_sample('acquired', file_basename, extension)

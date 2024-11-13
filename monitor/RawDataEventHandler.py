@@ -49,7 +49,9 @@ class RawDataEventHandler(RegexMatchingEventHandler):
         self.test = test
 
     def on_created(self, event):
+        logger.debug(f'file created: {event.src_path}')
         self.queue_mgr.put_message(self.queue_mgr.conversion_q(), event.src_path)
 
     def on_moved(self, event):
+        logger.debug(f'file moved: {event.dest_path}')
         self.queue_mgr.put_message(self.queue_mgr.conversion_q(), event.dest_path)

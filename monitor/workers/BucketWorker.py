@@ -73,7 +73,7 @@ class BucketWorker(Thread):
             try:
                 item = self.queue_mgr.get_next_message(self.queue_mgr.upload_q())
                 if not item:
-                    logger.debug('\twaiting...')
+                    # logger.debug('\twaiting...')
                     time.sleep(1.7)
                     continue
 

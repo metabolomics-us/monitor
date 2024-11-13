@@ -72,7 +72,7 @@ class BackendClient:
         returns the acquisition data of this sample
         """
         self.logger.debug("getting acquisition data for sample %s", sample_name)
-        result = self.http.get(f'{self._url}/stasis/acquisition/{sample_name}', headers=self._header)
+        result = self.http.get(f'{self._url}/samples/metadata/{sample_name}', headers=self._header)
         if result.status_code != 200:
             return False
         return True
@@ -83,7 +83,7 @@ class BackendClient:
         returns the acquisition data of this sample
         """
         self.logger.debug("getting acquisition data for sample %s", sample_name)
-        result = self.http.get(f'{self._url}/stasis/acquisition/{sample_name}', headers=self._header)
+        result = self.http.get(f'{self._url}/samples/metadata/{sample_name}', headers=self._header)
         if result.status_code == 200:
             return result.json()
         elif result.status_code == 404:
@@ -93,7 +93,7 @@ class BackendClient:
                             f"and error was {result.reason} for sample {sample_name}")
 
     @retry(exceptions=Exception, tries=RETRY_COUNT, delay=1, backoff=2)
-    def sample_state_update(self, sample_name: str, state, file_handle: Optional[str] = None):
+    def sample_state_update(self, sample_name: str, state, file_handle: Optional[str] = None, reason: Optional[str] = None):
         """
         updates a sample state in the remote system
         """
@@ -105,8 +105,10 @@ class BackendClient:
 
         if file_handle is not None:
             data['fileHandle'] = file_handle
+        if reason is not None:
+            data['reason'] = reason
 
-        result = self.http.post(f'{self._url}/gostasis/tracking', json=data, headers=self._header)
+        result = self.http.post(f'{self._url}/samples/status', json=data, headers=self._header)
         if result.status_code != 200: raise Exception(
             f"we observed an error. Status code was {result.status_code} and error was {result.reason} and {sample_name} in {state} with {file_handle}")
         return result
