@@ -89,14 +89,16 @@ class BucketWorker(Thread):
                     logger.info(f'\tFile {remote_name} saved to {self.bucket.bucket_name}')
 
                     # paranoid checking if sample is still in the bucket
-                    key = f'{file_basename}.{extension}'
-                    exists = self.bucket.object_head(key)
-                    logger.info(f'\tFile {key} upload correctly? {exists}')
-                    if exists:
-                        self.pass_sample(file_basename, extension)
-                    else:
-                        self.fail_sample(file_basename, 'mzml',
-                                         reason=f'After successful upload the file {key} was not found on S3')
+                    try:
+                        self.re_check_file(file_basename, extension)
+                    except Exception as ex:
+                        logger.error(f'Failed checking if file was uploaded correctly, trying again.')
+                        time.sleep(5)
+                        try:
+                            self.re_check_file(file_basename, extension)
+                        except Exception as ex:
+                            logger.error(f'Failed checking if file was uploaded correctly.')
+                            self.fail_sample(file_basename, 'mzml', reason='Couldn\'t check if file was uploaded successfully')
 
                 else:
                     self.fail_sample(file_basename, 'mzml',
@@ -149,3 +151,13 @@ class BucketWorker(Thread):
 
     def exists(self, filename):
         return self.bucket.exists(filename)
+
+
+    def re_check_file(self, file_basename, extension):
+        key = f'{file_basename}.{extension}'
+        exists = self.bucket.object_head(key)
+        logger.info(f'\tFile {key} upload correctly? {exists}')
+        if exists:
+            self.pass_sample(file_basename, extension)
+        else:
+            self.fail_sample(file_basename, 'mzml', reason=f'After successful upload the file {key} was not found on S3')
