@@ -77,11 +77,11 @@ class Bucket:
     def object_head(self, filename) -> bool:
         try:
             boto3.client('s3').head_object(Bucket=self.bucket_name, Key=filename)
-            logger.info(f"Key: '{filename}' found!")
+            logger.info(f"\tKey: '{filename}' found!")
             return True
         except botocore.exceptions.ClientError as e:
             if e.response["Error"]["Code"] == "404":
-                logger.error(f"Key: '{filename}' does not exist!")
+                logger.error(f"\tKey: '{filename}' does not exist!")
             else:
                 logger.error("Something else went wrong")
 
