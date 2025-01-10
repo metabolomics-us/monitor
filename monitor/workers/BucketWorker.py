@@ -16,11 +16,12 @@ from monitor.QueueManager import QueueManager
 from monitor.client.BackendClient import BackendClient
 
 logger = logging.getLogger('BucketWorker')
-h = watchtower.CloudWatchLogHandler(
-    log_group_name=f'/lcb/monitor/{platform.node()}',
-    log_group_retention_days=3,
-    send_interval=30)
-logger.addHandler(h)
+if not logger.handlers:
+    h = watchtower.CloudWatchLogHandler(
+        log_group_name=f'/lcb/monitor/{platform.node()}',
+        log_group_retention_days=3,
+        send_interval=30)
+    logger.addHandler(h)
 
 
 class BucketWorker(Thread):

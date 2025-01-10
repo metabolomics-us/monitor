@@ -19,11 +19,12 @@ from monitor.QueueManager import QueueManager
 from monitor.client.BackendClient import BackendClient
 
 logger = logging.getLogger('PwizWorker')
-h = watchtower.CloudWatchLogHandler(
-    log_group_name=f'/lcb/monitor/{platform.node()}',
-    log_group_retention_days=3,
-    send_interval=30)
-logger.addHandler(h)
+if not logger.handlers:
+    h = watchtower.CloudWatchLogHandler(
+        log_group_name=f'/lcb/monitor/{platform.node()}',
+        log_group_retention_days=3,
+        send_interval=30)
+    logger.addHandler(h)
 
 
 class PwizWorker(Thread):
@@ -81,10 +82,17 @@ class PwizWorker(Thread):
 
         while self.running:
             try:
-                item = self.queue_mgr.get_next_message(self.queue_mgr.conversion_q())
+                queue = self.queue_mgr.conversion_q()
+                if not queue:
+                    logger.warn('Failed to get queue url, skipping for now...')
+                    continue
+
+                item = self.queue_mgr.get_next_message(queue)
                 if not item:
                     # logger.debug('\twaiting...')
                     time.sleep(1.7)
+                    file_basename = None
+                    ext = None
                     continue
 
                 splits = str(item.split(os.path.sep)[-1]).rsplit('.', 1)
@@ -151,7 +159,7 @@ class PwizWorker(Thread):
 
                         self.fail_sample(file_basename, extension, reason=json.dumps(error, use_decimal=True))
 
-                size = self.queue_mgr.get_size(self.queue_mgr.conversion_q())
+                size = self.queue_mgr.get_size(queue)
                 logger.info(f'Conversion queue size: {size}')
 
             except KeyboardInterrupt:
@@ -163,7 +171,11 @@ class PwizWorker(Thread):
                 logger.error(str(ex))
                 time.sleep(1)
 
+            except EndpointConnectionError as ece:
+                logger.warn('Connection Error')
+
             except Exception as ex:
+                logger.error(f'Exception: {type(ex)}')
                 logger.error(f'Skipping conversion of sample {item} -- Error: {ex.args}')
                 filename, ext = str(item.split(os.sep)[-1]).split('.')
                 self.fail_sample(filename, ext, reason=str(ex))

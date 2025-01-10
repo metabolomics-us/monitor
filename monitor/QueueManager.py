@@ -1,5 +1,6 @@
 import logging
 import platform
+import time
 
 import boto3
 import watchtower
@@ -10,11 +11,12 @@ QUEUES = [{'type': 'conversion', 'name': 'MonitorConversionQueue'},
           {'type': 'preprocess', 'name': 'MonitorPreprocessingQueue'}]
 
 logger = logging.getLogger('QueueManager')
-h = watchtower.CloudWatchLogHandler(
-    log_group_name=f'/lcb/monitor/{platform.node()}',
-    log_group_retention_days=3,
-    send_interval=30)
-logger.addHandler(h)
+if not logger.handlers:
+    h = watchtower.CloudWatchLogHandler(
+        log_group_name=f'/lcb/monitor/{platform.node()}',
+        log_group_retention_days=3,
+        send_interval=30)
+    logger.addHandler(h)
 logger.setLevel(logging.INFO)
 
 
@@ -28,14 +30,21 @@ class QueueManager:
 
     def conversion_q(self):
         q = list(filter(lambda x: x['type'] == 'conversion', QUEUES))[0]
-        return self.__get_queue(f"{q['name']}-{self.host}-{self.stage}")['QueueUrl']
+        queue = self.__get_queue(f"{q['name']}-{self.host}-{self.stage}")
+        if not queue:
+            time.sleep(5)
+            queue = self.__get_queue(f"{q['name']}-{self.host}-{self.stage}")
+            if not queue:
+                raise QueueClientException(f'Failed to get queue url twice')
+                return None
+        return queue['QueueUrl']
 
     def upload_q(self):
         q = list(filter(lambda x: x['type'] == 'upload', QUEUES))[0]
         return self.__get_queue(f"{q['name']}-{self.host}-{self.stage}")['QueueUrl']
 
     def get_next_message(self, queue_url: str):
-        data = self.sqs.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=1, VisibilityTimeout=10)
+        data = self.sqs.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=1, VisibilityTimeout=400)
         msg = {}
 
         if data.get('Messages', []):
@@ -57,6 +66,8 @@ class QueueManager:
         except ClientError as ce:
             logger.error(f'Queue "{name}" does not exist.')
             quit()
+        except Exception as ex:
+            print(f'Exception {type(ex)}')
 
     def get_size(self, queue_url: str):
         return int(self.sqs.get_queue_attributes(

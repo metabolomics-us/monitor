@@ -14,11 +14,12 @@ FOLDERS_RX = r'^.*?\.d$'
 FILES_RX = r'^.*?\.(?:raw|wiff|mzml)$'
 
 logger = logging.getLogger('RawDataEventHandler')
-h = watchtower.CloudWatchLogHandler(
-    log_group_name=f'/lcb/monitor/{platform.node()}',
-    log_group_retention_days=3,
-    send_interval=30)
-logger.addHandler(h)
+if not logger.handlers:
+    h = watchtower.CloudWatchLogHandler(
+        log_group_name=f'/lcb/monitor/{platform.node()}',
+        log_group_retention_days=3,
+        send_interval=30)
+    logger.addHandler(h)
 
 
 class RawDataEventHandler(RegexMatchingEventHandler):

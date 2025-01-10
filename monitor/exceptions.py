@@ -36,3 +36,8 @@ class JobDataStoreException(Exception):
             self.message = f'\tError scheduling job'
 
         super().__init__(self.message)
+
+
+class QueueClientException(Exception):
+    def __init__(self):
+        super().__init__(self.message)

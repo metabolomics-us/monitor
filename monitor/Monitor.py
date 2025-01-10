@@ -4,6 +4,7 @@ import logging
 import os
 import platform
 import time
+import math
 from threading import Thread
 
 import watchtower
@@ -18,11 +19,12 @@ from monitor.workers.PwizWorker import PwizWorker
 THREAD_TIMEOUT = 5
 
 logger = logging.getLogger('Monitor')
-h = watchtower.CloudWatchLogHandler(
-    log_group_name=f'/lcb/monitor/{platform.node()}',
-    log_group_retention_days=3,
-    send_interval=10)
-logger.addHandler(h)
+if not logger.handlers:
+    h = watchtower.CloudWatchLogHandler(
+        log_group_name=f'/lcb/monitor/{platform.node()}',
+        log_group_retention_days=3,
+        send_interval=10)
+    logger.addHandler(h)
 
 
 class Monitor(Thread):
@@ -61,14 +63,13 @@ class Monitor(Thread):
         observer = ObserverFactory().getObserver(self.config['monitor']['mode'])
 
         try:
-            # Setup the aws uploader worker
-            aws_worker = BucketWorker(self,
-                                      self.backend_cli,
-                                      self.config,
-                                      self.queue_mgr)
+            proc_cores = math.floor(os.cpu_count() / 3)
+            upld_cores = math.ceil(proc_cores / 3)
 
-            threads = [aws_worker]
+            logger.info(f'Using {proc_cores} for processing')
+            logger.info(f'Using {upld_cores} for uploading')
 
+            threads = []
             # Setup the pwiz workers
             [threads.append(
                 PwizWorker(self,
@@ -76,7 +77,16 @@ class Monitor(Thread):
                            self.queue_mgr,
                            self.config,
                            name=f'Converter{x}')
-            ) for x in range(0, 5)]
+            ) for x in range(0, proc_cores)]
+
+            # Setup the aws uploader worker
+            [threads.append(
+                BucketWorker(self,
+                             self.backend_cli,
+                             self.config,
+                             self.queue_mgr,
+                             name=f'Uploader{x}')
+            ) for x in range(0, upld_cores)]
 
             logger.info(f'Starting threads')
             for t in threads:
