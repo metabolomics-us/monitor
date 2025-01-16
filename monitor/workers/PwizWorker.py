@@ -7,6 +7,7 @@ import re
 import subprocess
 import tempfile
 import time
+from botocore.exceptions import EndpointConnectionError
 from os.path import getsize, join
 from pathlib import Path
 from threading import Thread, Lock, local
@@ -19,12 +20,12 @@ from monitor.QueueManager import QueueManager
 from monitor.client.BackendClient import BackendClient
 
 logger = logging.getLogger('PwizWorker')
-if not logger.handlers:
-    h = watchtower.CloudWatchLogHandler(
-        log_group_name=f'/lcb/monitor/{platform.node()}',
-        log_group_retention_days=3,
-        send_interval=30)
-    logger.addHandler(h)
+# if not logger.handlers:
+#     h = watchtower.CloudWatchLogHandler(
+#         log_group_name=f'/lcb/monitor/{platform.node()}',
+#         log_group_retention_days=3,
+#         send_interval=30)
+#     logger.addHandler(h)
 
 
 class PwizWorker(Thread):

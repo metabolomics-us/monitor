@@ -13,12 +13,12 @@ from retry import retry
 from urllib3 import Retry
 
 logger = logging.getLogger('BackendClient')
-if not logger.handlers:
-    h = watchtower.CloudWatchLogHandler(
-        log_group_name=f'/lcb/monitor/{platform.node()}',
-        log_group_retention_days=3,
-        send_interval=30)
-    logger.addHandler(h)
+# if not logger.handlers:
+#     h = watchtower.CloudWatchLogHandler(
+#         log_group_name=f'/lcb/monitor/{platform.node()}',
+#         log_group_retention_days=3,
+#         send_interval=30)
+#     logger.addHandler(h)
 
 RETRY_COUNT = 3
 

@@ -71,7 +71,8 @@ class Bucket:
                 # The object does not exist.
                 return False
         except Exception as other:
-            logger.info(f'Other exception: {str(other)}')
+            logger.error(type(other))
+            logger.error(f'Other exception: {str(other)}')
             raise other
 
     def object_head(self, filename) -> bool:

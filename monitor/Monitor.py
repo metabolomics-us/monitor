@@ -19,12 +19,12 @@ from monitor.workers.PwizWorker import PwizWorker
 THREAD_TIMEOUT = 5
 
 logger = logging.getLogger('Monitor')
-if not logger.handlers:
-    h = watchtower.CloudWatchLogHandler(
-        log_group_name=f'/lcb/monitor/{platform.node()}',
-        log_group_retention_days=3,
-        send_interval=10)
-    logger.addHandler(h)
+# if not logger.handlers:
+#     h = watchtower.CloudWatchLogHandler(
+#         log_group_name=f'/lcb/monitor/{platform.node()}',
+#         log_group_retention_days=3,
+#         send_interval=10)
+#     logger.addHandler(h)
 
 
 class Monitor(Thread):
@@ -65,6 +65,8 @@ class Monitor(Thread):
         try:
             proc_cores = math.floor(os.cpu_count() / 3)
             upld_cores = math.ceil(proc_cores / 3)
+            # proc_cores = 10
+            # upld_cores = 2
 
             logger.info(f'Using {proc_cores} for processing')
             logger.info(f'Using {upld_cores} for uploading')
